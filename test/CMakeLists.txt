@@ -4,6 +4,7 @@ project(TEST)
 set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
 set(CMAKE_CXX_FLAGS "-O2 -march=x86-64 -std=c++17")
+set(Eigen3_DIR $ENV{MY_Eigen3_DIR})
 
 find_package (Eigen3 3.3 REQUIRED NO_MODULE)
 
