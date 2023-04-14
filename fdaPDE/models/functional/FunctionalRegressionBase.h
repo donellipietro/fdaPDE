@@ -120,7 +120,11 @@ namespace fdaPDE
             // \hat y_{n+1} = \integral{x_{n+1}^T*B} + y_mean = x_{n+1}^T*R0*B + y_mean
             DMatrix<double> predict(const DVector<double> &covs)
             {
-                DMatrix<double> Y_hat = (covs - X_mean_).transpose() * R0() * B_;
+                DVector<double> X_new{covs};
+                if (center_)
+                    X_new -= X_mean();
+
+                DMatrix<double> Y_hat = X_new.transpose() * R0() * B_;
                 if (center_)
                     Y_hat += Y_mean_.transpose();
                 return Y_hat;
