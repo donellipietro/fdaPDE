@@ -105,6 +105,11 @@ namespace fdaPDE
                 lambda_vect_ = lambda_vect;
             }
 
+            DMatrix<double> reconstructedField() const
+            {
+                return (T() * C().transpose()).rowwise() + this->X_mean().transpose();
+            }
+
             virtual ~FPLSR() = default;
         };
         template <typename PDE_, typename RegularizationType_,

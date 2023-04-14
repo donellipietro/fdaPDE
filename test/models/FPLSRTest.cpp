@@ -27,6 +27,7 @@ using fdaPDE::testing::almost_equal;
 #include <cmath>
 #include <random>
 #include <fstream>
+#include <filesystem>
 const static Eigen::IOFormat CSVFormat(Eigen::StreamPrecision, Eigen::DontAlignCols, ",", "\n");
 
 // #include "../fdaPDE/core/OPT/optimizers/Grid.h"
@@ -162,13 +163,7 @@ TEST(FPLSR, Test1_Laplacian_GeostatisticalAtNodes)
         fdaPDE::models::fixed_lambda>
       model(problem);
 
-  // BlockFrame<double, int> df_data{generate_2D_data(model, 50, 2)};
-
-  // load data from .csv files
-  CSVReader<double> reader{};
-  CSVFile<double> yFile; // observation file
-  CSVFile<double> xFile; // covariates file
-
+  // Tests
   std::string tests_directory = "data/models/FPLSR/2D_test1/";
   bool VERBOSE = false;
   std::vector<unsigned int> tests{1, 2, 3, 4, 5, 6};
@@ -184,6 +179,13 @@ TEST(FPLSR, Test1_Laplacian_GeostatisticalAtNodes)
     }
 
     std::string test_directory = tests_directory + "test" + std::to_string(i) + "/";
+
+    // BlockFrame<double, int> df_data{generate_2D_data(model, 50, 2)};
+
+    // load data from .csv files
+    CSVReader<double> reader{};
+    CSVFile<double> yFile; // observation file
+    CSVFile<double> xFile; // covariates file
 
     yFile = reader.parseFile(test_directory + "Y.csv");
     xFile = reader.parseFile(test_directory + "X.csv");
@@ -215,7 +217,7 @@ TEST(FPLSR, Test1_Laplacian_GeostatisticalAtNodes)
     DMatrix<double> D{model.D()};
     DMatrix<double> Y_hat1{(T * D.transpose()).rowwise() + model.Y_mean().transpose()};
     DMatrix<double> Y_hat2{model.fitted()};
-    DMatrix<double> beta_hat{model.B()};
+    DMatrix<double> B_hat{model.B()};
 
     //   **  test correctness of computed results  **
 
@@ -238,18 +240,18 @@ TEST(FPLSR, Test1_Laplacian_GeostatisticalAtNodes)
     EXPECT_TRUE(almost_equal(expected_Y_hat, Y_hat1));
     EXPECT_TRUE(almost_equal(expected_Y_hat, Y_hat2));
 
-    file = reader.parseFile(test_directory + "beta_hat.csv");
-    DMatrix<double> expected_beta_hat = file.toEigen();
+    file = reader.parseFile(test_directory + "B_hat.csv");
+    DMatrix<double> expected_B_hat = file.toEigen();
     if (VERBOSE)
     {
       std::cout << "Expected:" << std::endl;
-      std::cout << expected_beta_hat.topRows(5) << std::endl;
+      std::cout << expected_B_hat.topRows(5) << std::endl;
       std::cout << "Obtained:" << std::endl;
-      std::cout << beta_hat.topRows(5) << std::endl;
-      std::cout << "Error norm: " << (expected_beta_hat - beta_hat).lpNorm<Eigen::Infinity>() << std::endl;
+      std::cout << B_hat.topRows(5) << std::endl;
+      std::cout << "Error norm: " << (expected_B_hat - B_hat).lpNorm<Eigen::Infinity>() << std::endl;
       std::cout << "----------------" << std::endl;
     }
-    EXPECT_TRUE(almost_equal(expected_beta_hat, beta_hat));
+    EXPECT_TRUE(almost_equal(expected_B_hat, B_hat));
 
     file = reader.parseFile(test_directory + "W.csv");
     DMatrix<double> expected_W = file.toEigen();
@@ -305,137 +307,166 @@ TEST(FPLSR, Test1_Laplacian_GeostatisticalAtNodes)
   }
 }
 
-/* test 2
-   domain:       unit square [1,1] x [1,1]
-   sampling:     locations = nodes
-   penalization: simple laplacian
-   BC:           no
-   order FE:     1
- */
-/*TEST(FPCA, Test2_Laplacian_GeostatisticalAtNodes_Separable_Monolithic) {
-  // define time domain
-  DVector<double> time_mesh;
-  time_mesh.resize(10);
-  std::size_t i = 0;
-  for(double x = 0.5; x <= 0.95; x+=0.05, ++i) time_mesh[i] = x;
-
+TEST(FPLSR, Test1_Laplacian_GeostatisticalAtNodes_Comparison)
+{
   // define domain and regularizing PDE
-  MeshLoader<Mesh2D<>> domain("unit_square05");
+  MeshLoader<Mesh2D<>> domain("unit_square");
   auto L = Laplacian();
-  DMatrix<double> u = DMatrix<double>::Zero(domain.mesh.elements()*3, 1);
-  PDE problem(domain.mesh, L, u); // definition of regularizing PDE
-  problem.init();
-
-  // define statistical model
-  // use optimal lambda to avoid possible numerical issues
-  double lambdaS = 1e-2;
-  double lambdaT = 1e-2;
-  // defaults to monolithic solution
-  FPCA<decltype(problem), fdaPDE::models::SpaceTimeSeparable,
-       fdaPDE::models::Sampling::GeoStatMeshNodes, fdaPDE::models::fixed_lambda> model(problem, time_mesh);
-  model.setLambdaS(lambdaS);
-  model.setLambdaT(lambdaT);
-
-  // load data from .csv files
-  CSVReader<double> reader{};
-  CSVFile<double> yFile; // observation file
-  yFile = reader.parseFile("data/models/FPCA/2D_test2/y.csv");
-  DMatrix<double> y = yFile.toEigen();
-
-  // set model data
-  BlockFrame<double, int> df;
-  df.insert("y", DMatrix<double>(y.transpose()));
-  model.setData(df);
-
-  // std::vector<SVector<1>> lambdas;
-  // for(double x = -6.0; x <= -2.0; x++) lambdas.push_back(SVector<1>(std::pow(10,x)));
-  // model.setLambda(lambdas);
-
-  // solve smoothing problem
-  model.init();
-  model.solve();
-
-  //   **  test correctness of computed results  **
-
-  // SpMatrix<double> expectedLoadings;
-  // Eigen::loadMarket(expectedLoadings, "data/models/FPCA/2D_test1/loadings.mtx");
-  // DMatrix<double> computedLoadings = model.loadings();
-  // EXPECT_TRUE( almost_equal(DMatrix<double>(expectedLoadings), computedLoadings) );
-
-  // SpMatrix<double> expectedScores;
-  // Eigen::loadMarket(expectedScores,   "data/models/FPCA/2D_test1/scores.mtx");
-  // DMatrix<double> computedScores = model.scores();
-  // EXPECT_TRUE( almost_equal(DMatrix<double>(expectedScores), computedScores) );
-
-}*/
-
-/* test 2
-   domain:       unit square [1,1] x [1,1]
-   sampling:     locations = nodes
-   penalization: simple laplacian
-   BC:           no
-   order FE:     1
- */
-/*TEST(FPCA, Test2_Laplacian_GeostatisticalAtNodes_Separable_Monolithic) {
-  // define time domain
-  DVector<double> time_mesh;
-  time_mesh.resize(11);
-  std::size_t i = 0;
-  for(double x = 0; x <= 0.5; x+=0.05, ++i) time_mesh[i] = x;
-
-  // define domain and regularizing PDE
-  MeshLoader<Mesh2D<>> domain("unit_square_coarse");
-  auto L = Laplacian();
-  DMatrix<double> u = DMatrix<double>::Zero(domain.mesh.elements()*3, 1);
+  DMatrix<double> u = DMatrix<double>::Zero(domain.mesh.elements() * 3, 1);
   PDE problem(domain.mesh, L, u); // definition of regularizing PDE
 
   // define statistical model
-  // use optimal lambda to avoid possible numerical issues
-  double lambdaS = 1e-4;
-  double lambdaT = 1e-4;
-  // defaults to monolithic solution
-  FPCA<decltype(problem), fdaPDE::models::SpaceTimeSeparable,
-       fdaPDE::models::Sampling::GeoStatMeshNodes, fdaPDE::models::gcv_lambda_selection> model;
-  model.setPDE(problem);
-  model.setTimeDomain(time_mesh);
-  model.setLambdaS(lambdaS);
-  model.setLambdaT(lambdaT);
+  FPLSR<decltype(problem), SpaceOnly, fdaPDE::models::Sampling::GeoStatMeshNodes,
+        fdaPDE::models::fixed_lambda>
+      model(problem);
 
-  // load data from .csv files
-  CSVReader<double> reader{};
-  CSVFile<double> yFile; // observation file
-  yFile = reader.parseFile("data/models/FPCA/2D_test3/y.csv");
-  DMatrix<double> y = yFile.toEigen().leftCols(11*441);
+  // tests
+  std::string tests_directory = "data/models/FPLSR/2D_test1/";
+  std::string method_name = "";
+  std::string comparison_directory = tests_directory + "comparison/";
+  if (!std::filesystem::exists(comparison_directory))
+    std::filesystem::create_directory(comparison_directory);
 
-  // set model data
-  BlockFrame<double, int> df;
-  df.insert("y", DMatrix<double>(y.transpose()));
-  model.setData(df);
+  bool VERBOSE = false;
+  std::vector<unsigned int> tests{1, 2, 3, 4, 5, 6};
 
-  std::vector<SVector<2>> lambdas;
-  for(double x = -4.0; x <= -2.0; x+=0.5) {
-    for(double y = -4.0; y <= -2.0; y+=0.5) {
-      lambdas.push_back(SVector<2>(std::pow(10,x), std::pow(10,y)));
+  // room to store the errors
+  std::vector<double> errors_Y;
+  std::vector<double> errors_X;
+  std::vector<double> errors_B;
+  errors_Y.reserve(tests.size());
+  errors_X.reserve(tests.size());
+  errors_B.reserve(tests.size());
+
+  // output file
+  std::ofstream outfile;
+
+  for (unsigned int i : tests)
+  {
+
+    if (VERBOSE)
+    {
+      std::cout << "##########" << std::endl;
+      std::cout << "# Test " << i << "#" << std::endl;
+      std::cout << "##########" << std::endl;
     }
+
+    // directories
+    std::string test_directory = tests_directory + "test" + std::to_string(i) + "/";
+    std::string comparison_test_directory = comparison_directory + "test" + std::to_string(i) + "/";
+    if (!std::filesystem::exists(comparison_test_directory))
+      std::filesystem::create_directory(comparison_test_directory);
+
+    // load data from .csv files
+    CSVReader<double> reader{};
+    CSVFile<double> yFile; // observation file
+    CSVFile<double> xFile; // covariates file
+    yFile = reader.parseFile(test_directory + "Y.csv");
+    xFile = reader.parseFile(test_directory + "X.csv");
+    DMatrix<double> Y = yFile.toEigen();
+    DMatrix<double> X = xFile.toEigen();
+
+    // set model data
+    BlockFrame<double, int> df_data;
+    df_data.insert(OBSERVATIONS_BLK, DMatrix<double>(Y));
+    df_data.insert(DESIGN_MATRIX_BLK, DMatrix<double>(X));
+
+    model.setData(df_data);
+
+    // smoothing parameter
+    double lambda = 10;
+    model.setLambdaS(lambda);
+    // std::vector<SVector<1>> lambdas;
+    // for (double x = -6.0; x <= -2.0; x++)
+    //   lambdas.push_back(SVector<1>(std::pow(10, x)));
+
+    // solve smoothing problem
+    model.init();
+    model.solve();
+
+    // Results
+    DMatrix<double> Y_hat{model.fitted()};
+    DMatrix<double> X_hat{model.reconstructedField()};
+    DMatrix<double> B_hat{model.B()};
+
+    //   **  comparison with original data  **
+
+    CSVFile<double> file; // covariates file
+
+    file = reader.parseFile(test_directory + "Y_clean.csv");
+    DMatrix<double> Y_clean = file.toEigen();
+    errors_Y.push_back((Y_clean - Y_hat).lpNorm<Eigen::Infinity>());
+    if (VERBOSE)
+    {
+      std::cout << "Expected:" << std::endl;
+      std::cout << Y_clean.topRows(5) << std::endl;
+      std::cout << "Obtained version:" << std::endl;
+      std::cout << Y_hat.topRows(5) << std::endl;
+      std::cout << "Error norm 1 " << errors_Y.back() << std::endl;
+      std::cout << "----------------" << std::endl;
+    }
+    outfile.open(comparison_test_directory + "Y_hat_" + method_name + ".csv");
+    outfile << Y_hat.format(CSVFormat);
+    outfile.close();
+
+    file = reader.parseFile(test_directory + "X_clean.csv");
+    DMatrix<double> X_clean = file.toEigen();
+    errors_X.push_back((X_clean - X_hat).lpNorm<Eigen::Infinity>());
+    if (VERBOSE)
+    {
+      std::cout << "Expected:" << std::endl;
+      std::cout << X_clean.topRows(5) << std::endl;
+      std::cout << "Obtained version:" << std::endl;
+      std::cout << X_hat.topRows(5) << std::endl;
+      std::cout << "Error norm 1 " << errors_X.back() << std::endl;
+      std::cout << "----------------" << std::endl;
+    }
+    outfile.open(comparison_test_directory + "X_hat_" + method_name + ".csv");
+    outfile << X_hat.format(CSVFormat);
+    outfile.close();
+
+    file = reader.parseFile(test_directory + "B.csv");
+    DMatrix<double> B = file.toEigen();
+    errors_B.push_back((B - B_hat).lpNorm<Eigen::Infinity>());
+    if (VERBOSE)
+    {
+      std::cout << "Expected:" << std::endl;
+      std::cout << B.topRows(5) << std::endl;
+      std::cout << "Obtained version:" << std::endl;
+      std::cout << B_hat.topRows(5) << std::endl;
+      std::cout << "Error norm 1 " << errors_B.back() << std::endl;
+      std::cout << "----------------" << std::endl;
+    }
+    outfile.open(comparison_test_directory + "B_hat_" + method_name + ".csv");
+    outfile << B_hat.format(CSVFormat);
+    outfile.close();
   }
-  model.setLambda(lambdas);
 
-  // solve smoothing problem
-  model.init();
-  model.solve();
+  std::ofstream results(comparison_directory + "results_" + method_name + ".csv");
 
-  //std::cout << model.loadings() << std::endl;
-
-  //   **  test correctness of computed results  **
-
-  // SpMatrix<double> expectedLoadings;
-  // Eigen::loadMarket(expectedLoadings, "data/models/FPCA/2D_test1/loadings.mtx");
-  // DMatrix<double> computedLoadings = model.loadings();
-  // EXPECT_TRUE( almost_equal(DMatrix<double>(expectedLoadings), computedLoadings) );
-
-  // SpMatrix<double> expectedScores;
-  // Eigen::loadMarket(expectedScores,   "data/models/FPCA/2D_test1/scores.mtx");
-  // DMatrix<double> computedScores = model.scores();
-  // EXPECT_TRUE( almost_equal(DMatrix<double>(expectedScores), computedScores) );
-
-}*/
+  if (VERBOSE)
+  {
+    std::cout << "Results: " << std::endl;
+    std::cout << std::setw(10) << std::left << "Tests"
+              << std::setw(12) << std::right << "Y_error"
+              << std::setw(12) << std::right << "X_error"
+              << std::setw(12) << std::right << "B_error" << std::endl;
+  }
+  results << "\"Test\",\"Y_error\",\"X_error\",\"B_error\"" << std::endl;
+  for (unsigned int i : tests)
+  {
+    if (VERBOSE)
+    {
+      std::string test_name = "Test " + std::to_string(i) + ":";
+      std::cout << std::setw(10) << std::left << test_name << std::right
+                << std::setw(12) << errors_Y[i - 1]
+                << std::setw(12) << errors_X[i - 1]
+                << std::setw(12) << errors_B[i - 1] << std::endl;
+    }
+    results << "\"Test" << i << "\","
+            << errors_Y[i - 1] << ","
+            << errors_X[i - 1] << ","
+            << errors_B[i - 1] << std::endl;
+  }
+  results.close();
+}
