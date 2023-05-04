@@ -32,11 +32,14 @@ namespace fdaPDE
             // solver
             SmootherType solver_;
 
+            // problem dimensions
+            std::size_t S_; // number of observation points
+            std::size_t N_; // number of samples
+            std::size_t K_; // number of basis
+
             // data
-            BlockFrame<double, int> df_;
             BlockFrame<double, int> df_solver_;
             double b_norm_;
-            DMatrix<double> locs_;
 
             // problem solution
             DMatrix<double> f_;
@@ -55,6 +58,7 @@ namespace fdaPDE
 
             // getters
             DMatrix<double> f() const { return f_; }
+            DMatrix<double> fitted() const { return f_ * solver_.PsiTD(); }
 
             // setters
             void setPDE(const PDE &pde)
@@ -66,6 +70,7 @@ namespace fdaPDE
 
                 // std::cout << "set_pde" << std::endl;
             }
+
             void setLambdaS(double lambda)
             {
                 // std::cout << "set_lambda" << std::endl;
@@ -74,33 +79,60 @@ namespace fdaPDE
 
                 // std::cout << "set_lambda" << std::endl;
             }
+
             void setLocations(const DMatrix<double> &locs)
             {
                 // std::cout << "set_locations" << std::endl;
 
-                locs_ = locs;
+                df_solver_.insert(SPACE_LOCATIONS_BLK, locs);
 
                 // std::cout << "set_locations" << std::endl;
             }
+
             void setData(const BlockFrame<double, int> &df)
             {
                 // std::cout << "set_data" << std::endl;
 
-                df_ = df;
-                b_norm_ = df_.get<double>(DESIGN_MATRIX_BLK).norm();
+                // unpack data
+                const auto &X = df.get<double>(OBSERVATIONS_BLK);
+                const auto &b = df.get<double>(DESIGN_MATRIX_BLK);
+
+                // dimensions
+                N_ = X.rows();
+                K_ = X.cols();
+
+                // covariates norm
+                b_norm_ = b.norm();
+
+                // solver's data
+                df_solver_.insert<double>(OBSERVATIONS_BLK, X.transpose() * b / b_norm_);
 
                 // std::cout << "set_data" << std::endl;
             }
+
+            void setData(const DMatrix<double> &X)
+            {
+                // std::cout << "set_data" << std::endl;
+
+                // dimensions
+                N_ = X.rows();
+                K_ = X.cols();
+
+                // covariates norm (in this case b is assumed to be a vector of ones)
+                b_norm_ = std::sqrt(N_);
+
+                // solver's data
+                df_solver_.insert<double>(OBSERVATIONS_BLK, X.colwise().sum().transpose() / b_norm_);
+
+                // std::cout << "set_data" << std::endl;
+            }
+
             void init()
             {
                 // std::cout << "init" << std::endl;
 
-                // solver's data
-                const auto &X = df_.get<double>(OBSERVATIONS_BLK);
-                const auto &b = df_.get<double>(DESIGN_MATRIX_BLK);
-                df_solver_.insert<double>(OBSERVATIONS_BLK, X.transpose() * b / b_norm_);
-                if constexpr (is_sampling_pointwise_at_locs<SmootherType>::value)
-                    df_solver_.insert(SPACE_LOCATIONS_BLK, locs_);
+                // number of mesh nodes
+                K_ = solver_.n_basis();
 
                 // initialization of the solver
                 solver_.setData(df_solver_);
@@ -109,7 +141,7 @@ namespace fdaPDE
                 solver_.init_model();
 
                 // reserve space for solution
-                f_.resize(1, X.cols());
+                f_.resize(1, K_);
 
                 // std::cout << "init" << std::endl;
             }

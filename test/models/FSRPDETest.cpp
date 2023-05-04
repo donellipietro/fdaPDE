@@ -65,6 +65,8 @@ TEST(FSRPDE, Test1_Laplacian_NonParametric_GeostatisticalAtNodes)
     df.insert(OBSERVATIONS_BLK, X);
     df.insert(DESIGN_MATRIX_BLK, b);
     model.setData(df);
+    // alternative
+    // model.setData(X);
 
     // solve smoothing problem
     model.init();
