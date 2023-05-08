@@ -27,6 +27,7 @@
 #include "models/GSRPDETest.cpp"
 // #include "models/FPCATest.cpp"
 #include "models/FPLSRTest.cpp"
+#include "models/FPLSRComparison.cpp"
 #include "models/FSRPDETest.cpp"
 //  GCV test suites
 #include "calibration/GCVTest.cpp"
