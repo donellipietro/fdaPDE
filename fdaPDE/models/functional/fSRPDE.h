@@ -49,11 +49,11 @@ namespace fdaPDE
             FSRPDE() = default;
             FSRPDE(const PDE &pde)
             {
-                // std::cout << "initialization" << std::endl;
+                // std::cout << "initialization fSRPDE" << std::endl;
 
                 setPDE(pde);
 
-                // std::cout << "initialization" << std::endl;
+                // std::cout << "initialization fSRPDE" << std::endl;
             };
 
             // getters
@@ -67,6 +67,12 @@ namespace fdaPDE
 
                 solver_.setPDE(pde);
                 solver_.init_pde();
+
+                // number of mesh nodes
+                K_ = solver_.n_basis();
+
+                // reserve space for solution
+                f_.resize(1, K_);
 
                 // std::cout << "set_pde" << std::endl;
             }
@@ -97,15 +103,7 @@ namespace fdaPDE
                 const auto &X = df.get<double>(OBSERVATIONS_BLK);
                 const auto &b = df.get<double>(DESIGN_MATRIX_BLK);
 
-                // dimensions
-                N_ = X.rows();
-                K_ = X.cols();
-
-                // covariates norm
-                b_norm_ = b.norm();
-
-                // solver's data
-                df_solver_.insert<double>(OBSERVATIONS_BLK, X.transpose() * b / b_norm_);
+                setData(X, b);
 
                 // std::cout << "set_data" << std::endl;
             }
@@ -116,7 +114,7 @@ namespace fdaPDE
 
                 // dimensions
                 N_ = X.rows();
-                K_ = X.cols();
+                S_ = X.cols();
 
                 // covariates norm (in this case b is assumed to be a vector of ones)
                 b_norm_ = std::sqrt(N_);
@@ -127,21 +125,39 @@ namespace fdaPDE
                 // std::cout << "set_data" << std::endl;
             }
 
+            void setData(const DMatrix<double> &X, const DVector<double> &b)
+            {
+
+                // std::cout << "set_data" << std::endl;
+
+                // dimensions
+                N_ = X.rows();
+                S_ = X.cols();
+
+                // covariates norm
+                b_norm_ = b.norm();
+
+                // solver's data
+                df_solver_.insert<double>(OBSERVATIONS_BLK, X.transpose() * b / b_norm_);
+
+                // std::cout << "set_data" << std::endl;
+            }
+
             void init()
             {
                 // std::cout << "init" << std::endl;
 
-                // number of mesh nodes
-                K_ = solver_.n_basis();
-
                 // initialization of the solver
                 solver_.setData(df_solver_);
+                // std::cout << "regularization" << std::endl;
                 solver_.init_regularization();
+                // std::cout << "regularization" << std::endl;
+                // std::cout << "sampling" << std::endl;
                 solver_.init_sampling();
+                // std::cout << "sampling" << std::endl;
+                // std::cout << "init model" << std::endl;
                 solver_.init_model();
-
-                // reserve space for solution
-                f_.resize(1, K_);
+                // std::cout << "init model" << std::endl;
 
                 // std::cout << "init" << std::endl;
             }
@@ -155,6 +171,31 @@ namespace fdaPDE
                 f_ = solver_.f().transpose() / (b_norm_);
 
                 // std::cout << "solve" << std::endl;
+            }
+
+            DMatrix<double> compute(const DMatrix<double> &X, const DVector<double> &b)
+            {
+                // std::cout << "compute" << std::endl;
+
+                setData(X, b);
+                init();
+                solve();
+                return f_;
+
+                // std::cout << "compute" << std::endl;
+            }
+
+            DMatrix<double> compute(const DMatrix<double> &X)
+            {
+                // std::cout << "compute" << std::endl;
+
+                setData(X);
+                init();
+                solve();
+
+                // std::cout << "compute" << std::endl;
+
+                return f_;
             }
         };
 
