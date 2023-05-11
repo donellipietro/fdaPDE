@@ -7,26 +7,31 @@ using fdaPDE::is_base_of_template;
 namespace fdaPDE{
 namespace models{
 
-  // collection of traits used across the models module
-
   // base class for model traits
   template <typename B> struct model_traits;
   
-  // possible solution strategies for a model
-  enum SolverType { Monolithic, Iterative };
-  // traits for detection of solution strategy
+  // supported resolution strategies for the smoothing problem
+  struct MonolithicSolver {};
   template <typename Model>
   struct is_solver_monolithic { 
-    static constexpr bool value = model_traits<Model>::solver == SolverType::Monolithic; };
+    static constexpr bool value = std::is_same<
+      typename model_traits<Model>::solver,
+      MonolithicSolver>::value;
+  };
+  struct IterativeSolver{};
   template <typename Model>
   struct is_solver_iterative { 
-    static constexpr bool value = model_traits<Model>::solver == SolverType::Iterative; };
+    static constexpr bool value = std::is_same<
+      typename model_traits<Model>::solver,
+      IterativeSolver>::value;
+  };
 
+  // supported regularization strategies, forward declarations
   template <typename Model> class ModelBase; // base class for any fdaPDE statistical model
   template <typename Model> class SpaceOnlyBase; // base class for any spatial model
   template <typename Model> class SpaceTimeBase; // base class for any spatio-temporal model
-  template <typename Model, SolverType solver> class SpaceTimeSeparableBase; // spatio-temporal, separable regularization
-  template <typename Model, SolverType Solver> class SpaceTimeParabolicBase; // spatio-temporal, parabolic regularization
+  template <typename Model, typename Solver> class SpaceTimeSeparableBase; // spatio-temporal, separable regularization
+  template <typename Model, typename Solver> class SpaceTimeParabolicBase; // spatio-temporal, parabolic regularization
   
   // empty classes for tagging regularization types
   struct SpaceOnly {};
@@ -36,128 +41,69 @@ namespace models{
   // trait to detect if a type implements ModelBase (can be regarded as a statistical model). This is the least
   // constraining requirement an algorithm can require on a type
   template <typename T>
-  struct is_stat_model {
-    static constexpr bool value = fdaPDE::is_base_of_template<ModelBase, T>::value;
-  };  
-  
-  // trait for the selection of the type of regularization
-  template <typename Model>
-  struct select_regularization_type {
-    using type = typename std::conditional<
-      std::is_same<typename model_traits<Model>::RegularizationType, SpaceOnly>::value,
-      SpaceOnlyBase<Model>,
-      typename std::conditional<
-        std::is_same<typename model_traits<Model>::RegularizationType, SpaceTimeSeparable>::value,
-        SpaceTimeSeparableBase<Model, model_traits<Model>::solver>,
-        SpaceTimeParabolicBase<Model, model_traits<Model>::solver>>::type
-      >::type;
-  };
+  struct is_stat_model { static constexpr bool value = fdaPDE::is_base_of_template<ModelBase, T>::value; };  
 
-  // trait to detect if a model is a space-time model
+  // traits to detect if a model is space-only or space-time 
   template <typename Model>
-  struct is_space_time {
-    static constexpr bool value = !std::is_same<
-      typename model_traits<typename std::decay<Model>::type>::RegularizationType,
+  struct is_space_only {
+    static constexpr bool value = std::is_same<
+      typename model_traits<typename std::decay<Model>::type>::regularization,
       SpaceOnly>::value;
   };
-
   template <typename Model>
-  struct is_space_time_separable {
+  struct is_space_time { static constexpr bool value = !is_space_only<Model>::value; };
+  // specific traits for space-time regularizations
+  template <typename Model>
+  struct is_space_time_separable { // separable regularization
     static constexpr bool value = std::is_same<
-      typename model_traits<typename std::decay<Model>::type>::RegularizationType,
+      typename model_traits<typename std::decay<Model>::type>::regularization,
       SpaceTimeSeparable>::value;
   };
   template <typename Model>
-  struct is_space_time_parabolic {
+  struct is_space_time_parabolic { // parabolic regularization
     static constexpr bool value = std::is_same<
-      typename model_traits<typename std::decay<Model>::type>::RegularizationType,
+      typename model_traits<typename std::decay<Model>::type>::regularization,
       SpaceTimeParabolic>::value;
   };
   
-  // trait to detect if a model has a non-gaussian error distribution
-  class Gaussian; // tag used for distinguish a generalized model from a non-generalized one
+  // selects the regularization type for Model
   template <typename Model>
-  struct is_generalized {
-    static constexpr bool value = !std::is_same<
-      typename model_traits<typename std::decay<Model>::type>::DistributionType, Gaussian>::value;
+  struct select_regularization_type {
+    using type = typename std::conditional<
+      is_space_only<Model>::value, SpaceOnlyBase<Model>,
+      typename std::conditional<
+	is_space_time_separable<Model>::value,				
+	SpaceTimeSeparableBase<Model, typename model_traits<Model>::solver>,
+	SpaceTimeParabolicBase<Model, typename model_traits<Model>::solver>>::type
+      >::type;
   };
-  
-  // trait to select the number of smoothing parameters
-  template <typename RegularizationType>
+
+  // selects the number of smoothing parameters
+  template <typename Regularization>
   class n_smoothing_parameters {
     static constexpr int compute() {
-      if constexpr(!std::is_same<RegularizationType, SpaceOnly>::value) return 2;
-      else return 1;
+      // space only model have only one smoothness level in space
+      if constexpr(std::is_same<typename std::decay<Regularization>::type, SpaceOnly>::value) return 1;
+      else return 2; // space-time models regularize both in time and space
     }
   public:
-    static constexpr int value = n_smoothing_parameters<RegularizationType>::compute();
+    static constexpr int value = n_smoothing_parameters<Regularization>::compute();
   };
-  
+
   // allowed sampling strategies
-  enum Sampling { GeoStatLocations, GeoStatMeshNodes, Areal };
-  // traits for sampling design in space  
+  struct GeoStatLocations {}; // sampling locations p_1, ..., p_n are provided with no particular structure in the domain
+  struct GeoStatMeshNodes {}; // sampling locations p_1, ..., p_n coincide with mesh nodes
+  struct Areal {};            // subdomains D_1, ..., D_n are provided
+  // traits for sampling design in space
   template <typename Model>
   struct is_sampling_areal { 
-    static constexpr bool value = model_traits<Model>::sampling == Sampling::Areal; };
+    static constexpr bool value = std::is_same<typename model_traits<Model>::sampling, Areal>::value; };
   template <typename Model>
   struct is_sampling_pointwise_at_mesh { 
-    static constexpr bool value = model_traits<Model>::sampling == Sampling::GeoStatMeshNodes; };
+    static constexpr bool value = std::is_same<typename model_traits<Model>::sampling, GeoStatMeshNodes>::value; };
   template <typename Model>
   struct is_sampling_pointwise_at_locs { 
-    static constexpr bool value = model_traits<Model>::sampling == Sampling::GeoStatLocations; };
-  
-  // macros for the import of common symbols to avoid long annoying lists of using declarations in model implemetations
-
-  // this macro is intended to import all **common** symbols a model type can expect from its parent classes
-#define IMPORT_MODEL_SYMBOLS				                                 \
-  using Base::y;       /* vector of observations y = [y_1 ... y_n] */                    \
-  using Base::n_obs;   /* number of observations n */                                    \
-  using Base::n_basis; /* number of basis function for discretization in space N */      \
-  using Base::n_locs;  /* number of locations p_1 ... p_n where data are observed */     \
-  using Base::Psi;     /* n x N matrix of spatial basis evaluations at p_1 ... p_n */    \
-  using Base::PsiTD;   /* block P^T*D, being D the matrix of subdomains' measure */      \
-                       /* returns P^T if sampling is not areal */			 \
-  using Base::R1;      /* discretization of differential operator L (tensorized for */   \
-                       /* space-time problems) */					 \
-  using Base::R0;      /* mass matrix in space (tensorized for space-time problems) */   \
-  using Base::u;       /* discretization of forcing term */			         \
-  using Base::pde;     /* differential operator L (regularizing term) */                 \
-  using Base::data;    /* BlockFrame object containing data */		                 \
-  
-  // this macro is intended to import all **common** symbols a model can expect from a Regression base
-  // symbols specific for the regularization type used need to be imported via dedicated using declaration
-#define IMPORT_REGRESSION_SYMBOLS					                 \
-  IMPORT_MODEL_SYMBOLS;			              			                 \
-  /* data access */							                 \
-  using Base::W;             /* matrix of observation weights W_ = diag[W_1 ... W_n] */  \
-  using Base::q;	     /* number of covariates */			                 \
-  using Base::X;	     /* n x q design matrix X = [X_1 ... X_q] */                 \
-  using Base::XtWX;  	     /* q x q dense matrix X^T*W*X */		                 \
-  using Base::invXtWX;	     /* partialPivLU factorization of X^T*W*X */                 \
-  /* utilities */							                 \
-  using Base::hasCovariates; /* true if the model is semi-parametric */	                 \
-  using Base::hasWeights;    /* true if heteroscedastic observations are assumed */      \
-  using Base::lmbQ;	     /* efficient left multiplication by Q */	                 \
-  /* room for problem solution */					                 \
-  using Base::f_;            /* estimate of the nonparametric part of the model */       \
-  using Base::g_;            /* PDE misfit */				                 \
-  using Base::beta_;         /* estimate of coefficient vector for parametric part */    \
-
-  // macro for the import of some common CRTP functionalities. Requires a Model
-  // type to be in the scope of this macro
-#define DEFINE_CRTP_MODEL_UTILS						         \
-  inline const Model& model() const { return static_cast<const Model&>(*this); } \
-  inline Model& model() { return static_cast<Model&>(*this); }		         \
-  
-  // standardized definitions for stat model BlockFrame. layers below will make heavy assumptions on
-  // the layout of the BlockFrame, use these instead of manually typing the block name when accessing df_
-#define OBSERVATIONS_BLK    "OBSERVATIONS"     // matrix of observations
-#define INDEXES_BLK         "INDEXES"          // vector of observation indices
-#define SPACE_LOCATIONS_BLK "SPACE_LOCATIONS"  // matrix of space-location
-#define TIME_LOCATIONS_BLK  "TIME_LOCATIONS"   // vector of time-locations
-#define SPACE_AREAL_BLK     "INCIDENCE_MATRIX" // incidence matrix of areal observations
-#define DESIGN_MATRIX_BLK   "DESIGN_MATRIX"    // in regression is the design matrix
-#define WEIGHTS_BLK         "WEIGHTS"          // in regression are the weights for heteroscedastic observations
+    static constexpr bool value = std::is_same<typename model_traits<Model>::sampling, GeoStatLocations>::value; };
   
 }}
 

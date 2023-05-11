@@ -2,13 +2,13 @@
 // across many calls to solve() and are **not affected by a change in the data**.
 // It is implicitly called by ModelBase::init() as part of the initialization process.
 // NB: a change in the smoothing parameter must trigger a re-initialization of the model
-template <typename PDE, Sampling SamplingDesign>
-void STRPDE<PDE, SpaceTimeSeparable, SamplingDesign, SolverType::Monolithic>::init_model() {
+template <typename PDE, typename SamplingDesign>
+void STRPDE<PDE, SpaceTimeSeparable, SamplingDesign, MonolithicSolver>::init_model() {
   // assemble system matrix for the nonparameteric part of the model
-  SparseKroneckerProduct<> P = Kronecker(Pt(), pde().R0());  
+  if(is_empty(P_)) P_ = Kronecker(Pt(), pde().R0());  
   SparseBlockMatrix<double,2,2>
-    A(-PsiTD()*W()*Psi()-lambdaT()*P, lambdaS()*R1().transpose(),
-      lambdaS()*R1(),                 lambdaS()*R0()            );
+    A(-PsiTD()*W()*Psi()-lambdaT()*P_, lambdaS()*R1().transpose(),
+      lambdaS()*R1(),                  lambdaS()*R0()            );
   // cache system matrix for reuse
   A_ = A.derived();
   invA_.compute(A_);
@@ -19,8 +19,8 @@ void STRPDE<PDE, SpaceTimeSeparable, SamplingDesign, SolverType::Monolithic>::in
 }
 
 // finds a solution to the STR-PDE smoothing problem (separable penalization)
-template <typename PDE, Sampling SamplingDesign>
-void STRPDE<PDE, SpaceTimeSeparable, SamplingDesign, SolverType::Monolithic>::solve() {
+template <typename PDE, typename SamplingDesign>
+void STRPDE<PDE, SpaceTimeSeparable, SamplingDesign, MonolithicSolver>::solve() {
   BLOCK_FRAME_SANITY_CHECKS;
   DVector<double> sol; // room for problem' solution
    
@@ -29,7 +29,6 @@ void STRPDE<PDE, SpaceTimeSeparable, SamplingDesign, SolverType::Monolithic>::so
     b_.block(0,0, A_.rows()/2,1) = -PsiTD()*W()*y();
     // solve linear system A_*x = b_
     sol = invA_.solve(b_);
-    // store result of smoothing
     f_ = sol.head(A_.rows()/2);
   }else{ // parametric case
     // update rhs of STR-PDE linear system
@@ -55,10 +54,10 @@ void STRPDE<PDE, SpaceTimeSeparable, SamplingDesign, SolverType::Monolithic>::so
 // across many calls to solve() and are **not affected by a change in the data**.
 // It is implicitly called by ModelBase::init() as part of the initialization process.
 // NB: a change in the smoothing parameter must trigger a re-initialization of the model
-template <typename PDE, Sampling SamplingDesign>
-void STRPDE<PDE, SpaceTimeParabolic, SamplingDesign, SolverType::Monolithic>::init_model() {
+template <typename PDE, typename SamplingDesign>
+void STRPDE<PDE, SpaceTimeParabolic, SamplingDesign, MonolithicSolver>::init_model() {
   // assemble system matrix for the nonparameteric part of the model
-  SparseKroneckerProduct<> L_ = Kronecker(L(), pde().R0());
+  if(is_empty(L_)) L_ = Kronecker(L(), pde().R0());
   SparseBlockMatrix<double,2,2>
     A(-PsiTD()*W()*Psi(),              lambdaS()*(R1() + lambdaT()*L_).transpose(),
       lambdaS()*(R1() + lambdaT()*L_), lambdaS()*R0()                             );
@@ -72,8 +71,8 @@ void STRPDE<PDE, SpaceTimeParabolic, SamplingDesign, SolverType::Monolithic>::in
 }
 
 // finds a solution to the STR-PDE smoothing problem (parabolic penalization, monolithic solution)
-template <typename PDE, Sampling SamplingDesign>
-void STRPDE<PDE, SpaceTimeParabolic, SamplingDesign, SolverType::Monolithic>::solve() {
+template <typename PDE, typename SamplingDesign>
+void STRPDE<PDE, SpaceTimeParabolic, SamplingDesign, MonolithicSolver>::solve() {
   BLOCK_FRAME_SANITY_CHECKS;
   DVector<double> sol; // room for problem' solution
   
@@ -82,7 +81,6 @@ void STRPDE<PDE, SpaceTimeParabolic, SamplingDesign, SolverType::Monolithic>::so
     b_.block(0,0, A_.rows()/2,1) = -PsiTD()*W()*y();
     // solve linear system A_*x = b_
     sol = invA_.solve(b_);
-    // store result of smoothing
     f_ = sol.head(A_.rows()/2);
   }else{ // parametric case
     // rhs of STR-PDE linear system
@@ -105,8 +103,8 @@ void STRPDE<PDE, SpaceTimeParabolic, SamplingDesign, SolverType::Monolithic>::so
 }
 
 // J(f,g) = \sum_{k=1}^m (z^k - \Psi*f^k)^T*(z^k - \Psi*f^k) + \lambda_S*(g^k)^T*(g^k)
-template <typename PDE, Sampling SamplingDesign>
-double STRPDE<PDE, SpaceTimeParabolic, SamplingDesign, SolverType::Iterative>::
+template <typename PDE, typename SamplingDesign>
+double STRPDE<PDE, SpaceTimeParabolic, SamplingDesign, IterativeSolver>::
 J(const DMatrix<double>& f, const DMatrix<double>& g) const {
   double SSE = 0;
   // SSE = \sum_{k=1}^m (z^k - \Psi*f^k)^T*(z^k - \Psi*f^k)
@@ -117,8 +115,8 @@ J(const DMatrix<double>& f, const DMatrix<double>& g) const {
 }
 
 // internal solve routine used by the iterative method
-template <typename PDE, Sampling SamplingDesign>
-void STRPDE<PDE, SpaceTimeParabolic, SamplingDesign, SolverType::Iterative>::solve
+template <typename PDE, typename SamplingDesign>
+void STRPDE<PDE, SpaceTimeParabolic, SamplingDesign, IterativeSolver>::solve
 (std::size_t t, BlockVector<double>& f_new, BlockVector<double>& g_new) const {
   DVector<double> x = invA_.solve(b_);
   f_new(t) = x.topRows(n_basis()); g_new(t) = x.bottomRows(n_basis());
@@ -126,8 +124,8 @@ void STRPDE<PDE, SpaceTimeParabolic, SamplingDesign, SolverType::Iterative>::sol
 }
 
 // finds a solution to the STR-PDE smoothing problem (parabolic penalization, iterative solution)
-template <typename PDE, Sampling SamplingDesign>
-void STRPDE<PDE, SpaceTimeParabolic, SamplingDesign, SolverType::Iterative>::solve() {  
+template <typename PDE, typename SamplingDesign>
+void STRPDE<PDE, SpaceTimeParabolic, SamplingDesign, IterativeSolver>::solve() {  
   // compute starting point (f^(k,0), g^(k,0)) k = 1 ... m for iterative minimization of functional J(f,g)
   SparseBlockMatrix<double,2,2>
     A(PsiTD()*Psi(),   lambdaS()*R1().transpose(), 

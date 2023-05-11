@@ -9,6 +9,7 @@ using fdaPDE::core::NLA::SMW;
 #include "Distributions.h"
 #include <cstddef>
 #include "../ModelTraits.h"
+#include "../ModelMacros.h"
 #include "SRPDE.h"
 #include "STRPDE.h"
 
@@ -19,15 +20,18 @@ namespace models{
 
   // trait to select model type to use in the internal loop of FPIRLS
   template <typename Model>
-  struct FPIRLS_internal_solver {
+  class FPIRLS_internal_solver {
+  private:
     typedef typename std::decay<Model>::type Model_;
+    typedef typename model_traits<Model_>::PDE            PDE;
+    typedef typename model_traits<Model_>::sampling       sampling;
+    typedef typename model_traits<Model_>::solver         solver;
+    typedef typename model_traits<Model_>::regularization regularization;
+  public:
     using type = typename std::conditional<
       !is_space_time<Model_>::value,
-      // space-only problem
-      SRPDE <typename model_traits<Model_>::PDE, model_traits<Model_>::sampling>,
-      // space-time problem
-      STRPDE<typename model_traits<Model_>::PDE, typename model_traits<Model_>::RegularizationType,
-	     model_traits<Model_>::sampling, model_traits<Model_>::solver>
+      SRPDE <PDE, sampling>, // space-only problem
+      STRPDE<PDE, regularization, sampling, solver> // space-time problem
       >::type;
   };
   
@@ -68,7 +72,7 @@ namespace models{
       else{ // space-time
 	solver = typename FPIRLS_internal_solver<Model>::type(m_.pde(), m_.time_domain());
 	// in case of parabolic regularization derive initial condition from input model
-	if constexpr(std::is_same<typename model_traits<Model_>::RegularizationType,
+	if constexpr(std::is_same<typename model_traits<Model_>::regularization,
 		     SpaceTimeParabolic>::value)
 	  solver.setInitialCondition(m_.s());
       }
@@ -114,7 +118,8 @@ namespace models{
       return;
     }
 
-    // getters 
+    // getters
+    const DVector<double>& mu() const { return mu_; } // mean vector at convergence
     const DVector<double>& weights() const { return W_; } // weights matrix W at convergence
     const DVector<double>& beta() const { return beta_; } // estimate of coefficient vector 
     const DVector<double>& f() const { return f_; } // estimate of spatial field 
