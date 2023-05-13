@@ -25,13 +25,13 @@
 #include "models/SRPDETest.cpp"
 #include "models/STRPDETest.cpp"
 #include "models/GSRPDETest.cpp"
-// #include "models/FPCATest.cpp"
+#include "models/FPCATest.cpp"
 #include "models/FPLSRTest.cpp"
 #include "models/FPLSRComparison.cpp"
 #include "models/FSRPDETest.cpp"
 //  GCV test suites
 #include "calibration/GCVTest.cpp"
-#include "calibration/GCVNewtonTest.cpp"
+// #include "calibration/GCVNewtonTest.cpp"
 
 int main(int argc, char **argv)
 {

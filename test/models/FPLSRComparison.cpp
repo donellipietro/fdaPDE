@@ -10,10 +10,7 @@ using fdaPDE::core::FEM::PDE;
 #include "../fdaPDE/models/functional/fPLSR.h"
 using fdaPDE::models::FPLSR;
 #include "../fdaPDE/models/SamplingDesign.h"
-using fdaPDE::models::Sampling;
 #include "../../fdaPDE/models/ModelTraits.h"
-using fdaPDE::models::SolverType;
-using fdaPDE::models::SpaceOnly;
 
 #include "../utils/MeshLoader.h"
 using fdaPDE::testing::MeshLoader;
@@ -48,7 +45,7 @@ TEST(FPLSR, Test_comparison_Laplacian_GeostatisticalAtNodes)
   // define statistical model
   FPLSR<decltype(problem),
         SpaceOnly,
-        fdaPDE::models::Sampling::GeoStatMeshNodes,
+        fdaPDE::models::GeoStatMeshNodes,
         fdaPDE::models::fixed_lambda>
       model(problem);
 
@@ -57,6 +54,9 @@ TEST(FPLSR, Test_comparison_Laplacian_GeostatisticalAtNodes)
   bool VERBOSE = false;
   std::vector<unsigned int> tests{1, 2, 3, 4, 5, 6};
   unsigned int n_batches = 20;
+
+  // reader
+  CSVReader<double> reader{};
 
   for (unsigned int i : tests)
   {
@@ -77,7 +77,6 @@ TEST(FPLSR, Test_comparison_Laplacian_GeostatisticalAtNodes)
     {
 
       // load data from .csv files
-      CSVReader<double> reader{};
       CSVFile<double> yFile;
       yFile = reader.parseFile(test_directory + "Y_" + std::to_string(j) + ".csv");
       DMatrix<double> Y = yFile.toEigen();
@@ -85,16 +84,15 @@ TEST(FPLSR, Test_comparison_Laplacian_GeostatisticalAtNodes)
       xFile = reader.parseFile(test_directory + "X_" + std::to_string(j) + ".csv");
       DMatrix<double> X = xFile.toEigen();
 
+      // set smoothing parameter
+      double lambda = 10;
+      model.setLambdaS(lambda);
+
       // set model data
       BlockFrame<double, int> df_data;
       df_data.insert(OBSERVATIONS_BLK, Y);
       df_data.insert(DESIGN_MATRIX_BLK, X);
-      model.setDataExtra(df_data);
       model.setData(df_data);
-
-      // set smoothing parameter
-      double lambda = 10;
-      model.setLambdaS(lambda);
 
       // solve smoothing problem
       model.init();

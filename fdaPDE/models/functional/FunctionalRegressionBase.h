@@ -2,15 +2,11 @@
 #define __FUNCTIONAL_REGRESSION_BASE_H__
 
 #include "../../core/utils/Symbols.h"
-#include "FunctionalBase.h"
 #include "../ModelBase.h"
 #include "../SamplingDesign.h"
 #include "../ModelTraits.h"
 using fdaPDE::models::select_regularization_type;
-#include "../SpaceOnlyBase.h"
-#include "../SpaceTimeBase.h"
-#include "../space_time/SpaceTimeSeparableBase.h"
-#include "../space_time/SpaceTimeParabolicBase.h"
+#include "FunctionalBase.h"
 #include "fSRPDE.h"
 using fdaPDE::models::FSRPDE;
 
@@ -23,7 +19,7 @@ namespace fdaPDE
         struct FSRPDE_smoother
         {
             typedef typename std::decay<Model>::type Model_;
-            using type = FSRPDE<typename model_traits<Model_>::PDE, model_traits<Model_>::sampling>;
+            using type = FSRPDE<typename model_traits<Model_>::PDE, typename model_traits<Model_>::sampling>;
         };
 
         // base class for any *functional regression* fdaPDE model
@@ -57,18 +53,19 @@ namespace fdaPDE
             IMPORT_MODEL_SYMBOLS;
             typedef typename model_traits<Model>::PDE PDE; // PDE used for regularization in space
             typedef typename select_regularization_type<Model>::type RegularizationType;
-            typedef SamplingDesign<Model, model_traits<Model>::sampling> SamplingBase;
+            typedef SamplingDesign<Model, typename model_traits<Model>::sampling> SamplingBase;
             using RegularizationType::df_;     // BlockFrame for problem's data storage
             using RegularizationType::idx;     // indices of observations
             using RegularizationType::n_basis; // number of basis function over domain D
             using RegularizationType::pde_;    // differential operator L
+            using SamplingBase::locs;          // matrix of spatial locations
             using SamplingBase::Psi;           // matrix of spatial basis evaluation at locations p_1 ... p_N
 
             FunctionalRegressionBase() = default;
             // space-only constructor
             template <typename U = Model, // fake type to enable substitution in SFINAE
                       typename std::enable_if<
-                          std::is_same<typename model_traits<U>::RegularizationType, SpaceOnly>::value,
+                          std::is_same<typename model_traits<U>::regularization, SpaceOnly>::value,
                           int>::type = 0>
             FunctionalRegressionBase(const PDE &pde) : Base(pde), smoother_(pde)
             {
@@ -105,15 +102,14 @@ namespace fdaPDE
 
             // setters
             void setCenter(bool center) { center_ = center; }
-            void setDataExtra(BlockFrame<double, int> df_data) { df_data_ = df_data; }
 
             // getters
             std::size_t q() const { return df_.hasBlock(DESIGN_MATRIX_BLK) ? df_.template get<double>(DESIGN_MATRIX_BLK).cols() : 0; }
-            const DMatrix<double> &Y_original() const { return df_data_.template get<double>(OBSERVATIONS_BLK); }      // original responses
+            const DMatrix<double> &Y_original() const { return df_.template get<double>(OBSERVATIONS_BLK); }           // original responses
             const DMatrix<double> &Y_centered() const { return df_centered_.template get<double>(OBSERVATIONS_BLK); }  // centered responses
             const DVector<double> &Y_mean() const { return Y_mean_; };                                                 // responses mean
             const DMatrix<double> &Y() const { return center_ ? Y_centered() : Y_original(); }                         // responses used in the model
-            const DMatrix<double> &X_original() const { return df_data_.template get<double>(DESIGN_MATRIX_BLK); }     // original covariates
+            const DMatrix<double> &X_original() const { return df_.template get<double>(DESIGN_MATRIX_BLK); }          // original covariates
             const DMatrix<double> &X_centered() const { return df_centered_.template get<double>(DESIGN_MATRIX_BLK); } // centered covariates
             const DVector<double> &X_mean() const { return X_mean_; };                                                 // covariates mean
             const DMatrix<double> &X() const { return center_ ? X_centered() : X_original(); }                         // covariates used in the model
@@ -127,8 +123,10 @@ namespace fdaPDE
                 // add locations to smoother solver
                 if constexpr (is_sampling_pointwise_at_locs<SmootherType>::value)
                 {
-                    const DMatrix<double> locs = df_.template get<double>(SPACE_LOCATIONS_BLK);
-                    smoother_.setLocations(locs);
+                    // std::cout << "set spatial locations" << std::endl;
+                    const DMatrix<double> locs = this->locs();
+                    smoother_.set_spatial_locations(locs);
+                    // std::cout << "set spatial locations" << std::endl;
                 }
 
                 // centered data

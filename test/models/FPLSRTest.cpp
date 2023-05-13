@@ -10,10 +10,7 @@ using fdaPDE::core::FEM::PDE;
 #include "../fdaPDE/models/functional/fPLSR.h"
 using fdaPDE::models::FPLSR;
 #include "../fdaPDE/models/SamplingDesign.h"
-using fdaPDE::models::Sampling;
 #include "../../fdaPDE/models/ModelTraits.h"
-using fdaPDE::models::SolverType;
-using fdaPDE::models::SpaceOnly;
 
 #include "../utils/MeshLoader.h"
 using fdaPDE::testing::MeshLoader;
@@ -219,7 +216,7 @@ TEST(FPLSR, Test1_Laplacian_GeostatisticalAtNodes)
   // define statistical model
   FPLSR<decltype(problem),
         SpaceOnly,
-        fdaPDE::models::Sampling::GeoStatMeshNodes,
+        fdaPDE::models::GeoStatMeshNodes,
         fdaPDE::models::fixed_lambda>
       model(problem);
 
@@ -236,6 +233,9 @@ TEST(FPLSR, Test1_Laplacian_GeostatisticalAtNodes)
   errors_Y.reserve(tests.size());
   errors_X.reserve(tests.size());
   errors_B.reserve(tests.size());
+
+  // reader
+  CSVReader<double> reader{};
 
   // output file
   std::ofstream outfile;
@@ -256,8 +256,14 @@ TEST(FPLSR, Test1_Laplacian_GeostatisticalAtNodes)
     if (!std::filesystem::exists(results_directory))
       std::filesystem::create_directory(results_directory);
 
+    // smoothing parameter
+    double lambda = 10;
+    model.setLambdaS(lambda);
+
+    // set number of latent components
+    // model.set_H(3);
+
     // load data from .csv files
-    CSVReader<double> reader{};
     CSVFile<double> yFile; // observation file
     yFile = reader.parseFile(test_directory + "Y.csv");
     DMatrix<double> Y = yFile.toEigen();
@@ -269,15 +275,7 @@ TEST(FPLSR, Test1_Laplacian_GeostatisticalAtNodes)
     BlockFrame<double, int> df_data;
     df_data.insert(OBSERVATIONS_BLK, DMatrix<double>(Y));
     df_data.insert(DESIGN_MATRIX_BLK, DMatrix<double>(X));
-    model.setDataExtra(df_data);
     model.setData(df_data);
-
-    // smoothing parameter
-    double lambda = 10;
-    model.setLambdaS(lambda);
-
-    // set number of latent components
-    // model.setH(3);
 
     // solve smoothing problem
     model.init();
@@ -285,7 +283,7 @@ TEST(FPLSR, Test1_Laplacian_GeostatisticalAtNodes)
 
     // Results
     DMatrix<double> Y_hat{model.fitted()};
-    DMatrix<double> X_hat{model.reconstructedField()};
+    DMatrix<double> X_hat{model.reconstructed_field()};
     DMatrix<double> B_hat{model.B()};
 
     //   **  compare and export results  **   //
@@ -390,7 +388,7 @@ TEST(FPLSR, Test2_Laplacian_AtLocations)
   PDE problem(domain.mesh, L, u); // definition of regularizing PDE
 
   // define statistical model
-  FPLSR<decltype(problem), SpaceOnly, fdaPDE::models::Sampling::GeoStatLocations,
+  FPLSR<decltype(problem), SpaceOnly, fdaPDE::models::GeoStatLocations,
         fdaPDE::models::fixed_lambda>
       model(problem);
 
@@ -407,6 +405,9 @@ TEST(FPLSR, Test2_Laplacian_AtLocations)
   errors_Y.reserve(tests.size());
   errors_X.reserve(tests.size());
   errors_B.reserve(tests.size());
+
+  // reader
+  CSVReader<double> reader{};
 
   // output file
   std::ofstream outfile;
@@ -427,46 +428,42 @@ TEST(FPLSR, Test2_Laplacian_AtLocations)
     if (!std::filesystem::exists(results_directory))
       std::filesystem::create_directory(results_directory);
 
+    // load locations from -csv files
+    CSVFile<double> locFile;
+    locFile = reader.parseFile(test_directory + "locations.csv");
+    DMatrix<double> locs = locFile.toEigen();
+
+    // set locations
+    model.set_spatial_locations(locs);
+
+    // set smoothing parameter
+    double lambda = 10;
+    model.setLambdaS(lambda);
+
+    // set number of latent components
+    // model.set_H(3);
+
     // load data from .csv files
-    CSVReader<double> reader{};
     CSVFile<double> yFile; // observation file
     yFile = reader.parseFile(test_directory + "Y.csv");
     DMatrix<double> Y = yFile.toEigen();
     CSVFile<double> xFile; // covariates file
     xFile = reader.parseFile(test_directory + "X_locations.csv");
     DMatrix<double> X = xFile.toEigen();
-    CSVFile<double> locFile; // locations file
-    locFile = reader.parseFile(test_directory + "locations.csv");
-    DMatrix<double> loc = locFile.toEigen();
 
-    // set model data
-
-    // real data
+    // set data
     BlockFrame<double, int> df_data;
     df_data.insert(OBSERVATIONS_BLK, DMatrix<double>(Y));
     df_data.insert(DESIGN_MATRIX_BLK, DMatrix<double>(X));
-    model.setDataExtra(df_data);
+    model.setData(df_data);
 
-    // fake data
-    BlockFrame<double, int> df;
-    df.insert(OBSERVATIONS_BLK, DMatrix<double>(X.transpose()));
-    df.insert(SPACE_LOCATIONS_BLK, loc);
-    model.setData(df);
-
-    // smoothing parameter
-    double lambda = 10;
-    model.setLambdaS(lambda);
-
-    // set number of latent components
-    // model.setH(3);
-
-    // solve smoothing problem
+    // solve the problem
     model.init();
     model.solve();
 
     // Results
     DMatrix<double> Y_hat{model.fitted()};
-    DMatrix<double> X_hat{model.reconstructedField()};
+    DMatrix<double> X_hat{model.reconstructed_field()};
     DMatrix<double> B_hat{model.B()};
 
     //   **  compare and export results  **   //
@@ -561,7 +558,7 @@ TEST(FPLSR, Test2_Laplacian_AtLocations)
    BC:           no
    order FE:     1
  */
-TEST(FPLSR, Test3_Laplacian_AtLocations_less)
+TEST(FPLSR, Test3_Laplacian_AtLocations)
 {
 
   // define domain and regularizing PDE
@@ -571,7 +568,7 @@ TEST(FPLSR, Test3_Laplacian_AtLocations_less)
   PDE problem(domain.mesh, L, u); // definition of regularizing PDE
 
   // define statistical model
-  FPLSR<decltype(problem), SpaceOnly, fdaPDE::models::Sampling::GeoStatLocations,
+  FPLSR<decltype(problem), SpaceOnly, fdaPDE::models::GeoStatLocations,
         fdaPDE::models::fixed_lambda>
       model(problem);
 
@@ -588,6 +585,9 @@ TEST(FPLSR, Test3_Laplacian_AtLocations_less)
   errors_Y.reserve(tests.size());
   errors_X.reserve(tests.size());
   errors_B.reserve(tests.size());
+
+  // reader
+  CSVReader<double> reader{};
 
   // output file
   std::ofstream outfile;
@@ -608,46 +608,42 @@ TEST(FPLSR, Test3_Laplacian_AtLocations_less)
     if (!std::filesystem::exists(results_directory))
       std::filesystem::create_directory(results_directory);
 
+    // load locations from -csv files
+    CSVFile<double> locFile;
+    locFile = reader.parseFile(test_directory + "locations.csv");
+    DMatrix<double> locs = locFile.toEigen();
+
+    // set locations
+    model.set_spatial_locations(locs);
+
+    // set smoothing parameter
+    double lambda = 10;
+    model.setLambdaS(lambda);
+
+    // set number of latent components
+    // model.set_H(3);
+
     // load data from .csv files
-    CSVReader<double> reader{};
     CSVFile<double> yFile; // observation file
     yFile = reader.parseFile(test_directory + "Y.csv");
     DMatrix<double> Y = yFile.toEigen();
     CSVFile<double> xFile; // covariates file
     xFile = reader.parseFile(test_directory + "X_locations.csv");
     DMatrix<double> X = xFile.toEigen();
-    CSVFile<double> locFile; // locations file
-    locFile = reader.parseFile(test_directory + "locations.csv");
-    DMatrix<double> loc = locFile.toEigen();
 
-    // set model data
-
-    // real data
+    // set data
     BlockFrame<double, int> df_data;
     df_data.insert(OBSERVATIONS_BLK, DMatrix<double>(Y));
     df_data.insert(DESIGN_MATRIX_BLK, DMatrix<double>(X));
-    model.setDataExtra(df_data);
+    model.setData(df_data);
 
-    // fake data
-    BlockFrame<double, int> df;
-    df.insert(OBSERVATIONS_BLK, DMatrix<double>(X.transpose()));
-    df.insert(SPACE_LOCATIONS_BLK, loc);
-    model.setData(df);
-
-    // smoothing parameter
-    double lambda = 10;
-    model.setLambdaS(lambda);
-
-    // set number of latent components
-    // model.setH(3);
-
-    // solve smoothing problem
+    // solve the problem
     model.init();
     model.solve();
 
     // Results
     DMatrix<double> Y_hat{model.fitted()};
-    DMatrix<double> X_hat{model.reconstructedField()};
+    DMatrix<double> X_hat{model.reconstructed_field()};
     DMatrix<double> B_hat{model.B()};
 
     //   **  compare and export results  **   //
@@ -742,7 +738,7 @@ TEST(FPLSR, Test3_Laplacian_AtLocations_less)
    BC:           no
    order FE:     1
  */
-TEST(FPLSR, Test4_Laplacian_AtLocations_sub)
+TEST(FPLSR, Test4_Laplacian_AtLocations)
 {
 
   // define domain and regularizing PDE
@@ -752,7 +748,7 @@ TEST(FPLSR, Test4_Laplacian_AtLocations_sub)
   PDE problem(domain.mesh, L, u); // definition of regularizing PDE
 
   // define statistical model
-  FPLSR<decltype(problem), SpaceOnly, fdaPDE::models::Sampling::GeoStatLocations,
+  FPLSR<decltype(problem), SpaceOnly, fdaPDE::models::GeoStatLocations,
         fdaPDE::models::fixed_lambda>
       model(problem);
 
@@ -769,6 +765,9 @@ TEST(FPLSR, Test4_Laplacian_AtLocations_sub)
   errors_Y.reserve(tests.size());
   errors_X.reserve(tests.size());
   errors_B.reserve(tests.size());
+
+  // reader
+  CSVReader<double> reader{};
 
   // output file
   std::ofstream outfile;
@@ -789,46 +788,42 @@ TEST(FPLSR, Test4_Laplacian_AtLocations_sub)
     if (!std::filesystem::exists(results_directory))
       std::filesystem::create_directory(results_directory);
 
+    // load locations from -csv files
+    CSVFile<double> locFile;
+    locFile = reader.parseFile(test_directory + "locations.csv");
+    DMatrix<double> locs = locFile.toEigen();
+
+    // set locations
+    model.set_spatial_locations(locs);
+
+    // set smoothing parameter
+    double lambda = 10;
+    model.setLambdaS(lambda);
+
+    // set number of latent components
+    // model.set_H(3);
+
     // load data from .csv files
-    CSVReader<double> reader{};
     CSVFile<double> yFile; // observation file
     yFile = reader.parseFile(test_directory + "Y.csv");
     DMatrix<double> Y = yFile.toEigen();
     CSVFile<double> xFile; // covariates file
     xFile = reader.parseFile(test_directory + "X_locations.csv");
     DMatrix<double> X = xFile.toEigen();
-    CSVFile<double> locFile; // locations file
-    locFile = reader.parseFile(test_directory + "locations.csv");
-    DMatrix<double> loc = locFile.toEigen();
 
-    // set model data
-
-    // real data
+    // set data
     BlockFrame<double, int> df_data;
     df_data.insert(OBSERVATIONS_BLK, DMatrix<double>(Y));
     df_data.insert(DESIGN_MATRIX_BLK, DMatrix<double>(X));
-    model.setDataExtra(df_data);
+    model.setData(df_data);
 
-    // fake data
-    BlockFrame<double, int> df;
-    df.insert(OBSERVATIONS_BLK, DMatrix<double>(X.transpose()));
-    df.insert(SPACE_LOCATIONS_BLK, loc);
-    model.setData(df);
-
-    // smoothing parameter
-    double lambda = 10;
-    model.setLambdaS(lambda);
-
-    // set number of latent components
-    // model.setH(3);
-
-    // solve smoothing problem
+    // solve the problem
     model.init();
     model.solve();
 
     // Results
     DMatrix<double> Y_hat{model.fitted()};
-    DMatrix<double> X_hat{model.reconstructedField()};
+    DMatrix<double> X_hat{model.reconstructed_field()};
     DMatrix<double> B_hat{model.B()};
 
     //   **  compare and export results  **   //

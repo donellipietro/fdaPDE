@@ -1,17 +1,9 @@
 #ifndef __FSRPDE_H__
 #define __FSRPDE_H__
 
-#include <Eigen/SVD>
 #include "../../core/utils/Symbols.h"
 #include "../regression/SRPDE.h"
 using fdaPDE::models::SRPDE;
-// #include "../../calibration/GCV.h"
-// #include "../../calibration/KFoldCV.h"
-// using fdaPDE::calibration::GCV;
-// using fdaPDE::calibration::KFoldCV;
-// using fdaPDE::calibration::StochasticEDF;
-// #include "../../core/OPT/optimizers/GridOptimizer.h"
-// using fdaPDE::core::OPT::GridOptimizer;
 
 namespace fdaPDE
 {
@@ -19,7 +11,7 @@ namespace fdaPDE
     {
 
         // wrapper to apply SRPDE to functional data
-        template <typename PDE, Sampling SamplingDesign>
+        template <typename PDE, typename SamplingDesign>
         class FSRPDE
         {
             // compile time checks
@@ -86,11 +78,11 @@ namespace fdaPDE
                 // std::cout << "set_lambda" << std::endl;
             }
 
-            void setLocations(const DMatrix<double> &locs)
+            void set_spatial_locations(const DMatrix<double> &locs)
             {
                 // std::cout << "set_locations" << std::endl;
 
-                df_solver_.insert(SPACE_LOCATIONS_BLK, locs);
+                solver_.set_spatial_locations(locs);
 
                 // std::cout << "set_locations" << std::endl;
             }
@@ -199,14 +191,20 @@ namespace fdaPDE
             }
         };
 
-        template <typename PDE_, Sampling SamplingDesign>
-        struct model_traits<FSRPDE<PDE_, SamplingDesign>>
+        template <typename PDE_, typename SamplingDesign_>
+        struct model_traits<FSRPDE<PDE_, SamplingDesign_>>
         {
             typedef PDE_ PDE;
-            typedef SpaceOnly RegularizationType;
-            static constexpr Sampling sampling = SamplingDesign;
-            static constexpr SolverType solver = SolverType::Monolithic;
+            typedef SpaceOnly regularization;
+            typedef SamplingDesign_ sampling;
+            typedef MonolithicSolver solver;
             static constexpr int n_lambda = 1;
+        };
+
+        template <typename Model>
+        struct is_fsrpde
+        {
+            static constexpr bool value = is_instance_of<Model, FSRPDE>::value;
         };
 
     }

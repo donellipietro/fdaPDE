@@ -3,16 +3,13 @@
 
 #include <Eigen/SVD>
 #include "../../core/utils/Symbols.h"
-#include "../../calibration/GCV.h"
-#include "../../calibration/KFoldCV.h"
-using fdaPDE::calibration::GCV;
-using fdaPDE::calibration::KFoldCV;
-using fdaPDE::calibration::StochasticEDF;
-#include "FPIREM.h"
-#include "PCScoreCV.h"
-using fdaPDE::models::PCScoreCV;
 #include "../../core/OPT/optimizers/GridOptimizer.h"
 using fdaPDE::core::OPT::GridOptimizer;
+#include "../../calibration/GCV.h"
+using fdaPDE::calibration::GCV;
+#include "FunctionalBase.h"
+using fdaPDE::models::FunctionalBase;
+#include "ProfilingEstimation.h"
 #include "FunctionalRegressionBase.h"
 using fdaPDE::models::FunctionalRegressionBase;
 
@@ -21,18 +18,8 @@ namespace fdaPDE
     namespace models
     {
 
-        struct fixed_lambda
-        {
-        };
-        struct gcv_lambda_selection
-        {
-        };
-        struct kcv_lambda_selection
-        {
-        };
-
         // base class for any FPCA model
-        template <typename PDE, typename RegularizationType, Sampling SamplingDesign, typename lambda_selection_strategy>
+        template <typename PDE, typename RegularizationType, typename SamplingDesign, typename lambda_selection_strategy>
         class FPLSR : public FunctionalRegressionBase<FPLSR<PDE, RegularizationType, SamplingDesign, lambda_selection_strategy>>
         {
             // compile time checks
@@ -41,7 +28,6 @@ namespace fdaPDE
         private:
             typedef FPLSR<PDE, RegularizationType, SamplingDesign, lambda_selection_strategy> ModelType;
             typedef FunctionalRegressionBase<ModelType> Base;
-            typedef typename FPIREM<ModelType>::SmootherType SmootherType;
 
             // parameters used as stopping criterion by FPIREM algorithm
             std::size_t max_iter_ = 20; // maximum number of iterations before forced stop
@@ -71,11 +57,10 @@ namespace fdaPDE
             void solve_(gcv_lambda_selection);
             void solve_(kcv_lambda_selection);
 
-            // required to support \lambda parameter selection
-            std::vector<SVector<model_traits<SmootherType>::n_lambda>> lambda_vect_;
-
         public:
+            IMPORT_MODEL_SYMBOLS;
             using Base::lambda;
+            using Base::lambdas;
 
             // constructor
             FPLSR() = default;
@@ -83,7 +68,7 @@ namespace fdaPDE
             template <typename U = RegularizationType,
                       typename std::enable_if<std::is_same<U, SpaceOnly>::value, int>::type = 0>
             FPLSR(const PDE &pde) : Base(pde){
-                                        //  std::cout << "initialization fPLSR" << std::endl;
+                                        // std::cout << "initialization fPLSR" << std::endl;
                                     };
             // space-time constructor
             template <typename U = RegularizationType,
@@ -106,17 +91,12 @@ namespace fdaPDE
             const fdaPDE::SparseLU<SpMatrix<double>> &invPsiTPsi() const { return invPsiTPsi_; }
 
             // setters
-            void setTolerance(double tol) { tol_ = tol; }
-            void setMaxIterations(std::size_t max_iter) { max_iter_ = max_iter; }
-            void setH(std::size_t H) { H_ = H; }
-            // accepts a collection of \lambda parameters if a not fixed_lambda method is selected
-            void setLambda(const std::vector<SVector<model_traits<SmootherType>::n_lambda>> &lambda_vect)
-            {
-                lambda_vect_ = lambda_vect;
-            }
+            void set_tolerance(double tol) { tol_ = tol; }
+            void set_max_iterations(std::size_t max_iter) { max_iter_ = max_iter; }
+            void set_H(std::size_t H) { H_ = H; }
 
             // methods
-            DMatrix<double> reconstructedField() const
+            DMatrix<double> reconstructed_field() const
             {
                 return (T() * C().transpose()).rowwise() + this->X_mean().transpose();
             }
@@ -124,14 +104,14 @@ namespace fdaPDE
             virtual ~FPLSR() = default;
         };
         template <typename PDE_, typename RegularizationType_,
-                  Sampling SamplingDesign_, typename lambda_selection_strategy>
+                  typename SamplingDesign_, typename lambda_selection_strategy>
         struct model_traits<FPLSR<PDE_, RegularizationType_, SamplingDesign_, lambda_selection_strategy>>
         {
             typedef PDE_ PDE;
-            typedef RegularizationType_ RegularizationType;
-            static constexpr Sampling sampling = SamplingDesign_;
-            static constexpr SolverType solver = SolverType::Monolithic;
-            static constexpr int n_lambda = n_smoothing_parameters<RegularizationType>::value;
+            typedef fdaPDE::models::SpaceOnly regularization;
+            typedef SamplingDesign_ sampling;
+            typedef fdaPDE::models::MonolithicSolver solver;
+            static constexpr int n_lambda = 1;
         };
 
         /*
