@@ -10,6 +10,11 @@ using fdaPDE::calibration::GCV;
 #include "FunctionalBase.h"
 using fdaPDE::models::FunctionalBase;
 #include "ProfilingEstimation.h"
+#include "../../calibration/GCV.h"
+using fdaPDE::calibration::GCV;
+#include "FunctionalBase.h"
+using fdaPDE::models::FunctionalBase;
+#include "ProfilingEstimation.h"
 
 namespace fdaPDE
 {

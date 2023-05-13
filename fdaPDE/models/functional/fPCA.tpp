@@ -41,11 +41,12 @@ void FPCA<PDE, RegularizationType, SamplingDesign, lambda_selection_strategy>::s
     opt.optimize(f, lambdas()); // select optimal \lambda for i-th PC
     // compute and store results given estimated optimal \lambda
     pe.compute(X, opt.optimum());
-    loadings_.col(i) = pe.f();
+    loadings_.col(i) = pe.fitted();
     scores_.col(i) = pe.s();
     // subtract computed PC from data
     X -= scores_.col(i) * loadings_.col(i).transpose();
   }
+  return;
   return;
 }
 
