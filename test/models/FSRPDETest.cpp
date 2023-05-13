@@ -13,7 +13,6 @@ using fdaPDE::core::FEM::SpaceVaryingDiffusion;
 #include "../fdaPDE/models/functional/fSRPDE.h"
 using fdaPDE::models::FSRPDE;
 #include "../fdaPDE/models/SamplingDesign.h"
-using fdaPDE::models::Sampling;
 
 #include "../utils/MeshLoader.h"
 using fdaPDE::testing::MeshLoader;
@@ -44,7 +43,7 @@ TEST(FSRPDE, Test1_Laplacian_NonParametric_GeostatisticalAtNodes)
     PDE problem(domain.mesh, L, u); // definition of regularizing PDE
 
     // define statistical model
-    FSRPDE<decltype(problem), fdaPDE::models::Sampling::GeoStatMeshNodes> model(problem);
+    FSRPDE<decltype(problem), fdaPDE::models::GeoStatMeshNodes> model(problem);
 
     // set lambda
     double lambda = std::pow(0.1, 4);
@@ -96,6 +95,9 @@ TEST(FSRPDE, Test1_Laplacian_NonParametric_GeostatisticalAtNodes)
    */
 TEST(FSRPDE, Test2_Laplacian_SemiParametric_GeostatisticalAtLocations)
 {
+    std::string test_directory = "data/models/FSRPDE/2D_test2/";
+    CSVReader<double> reader{};
+
     // define domain and regularizing PDE
     MeshLoader<Mesh2D<>> domain("unit_square");
     auto L = Laplacian();
@@ -103,31 +105,31 @@ TEST(FSRPDE, Test2_Laplacian_SemiParametric_GeostatisticalAtLocations)
     PDE problem(domain.mesh, L, u); // definition of regularizing PDE
 
     // define statistical model
-    FSRPDE<decltype(problem), Sampling::GeoStatLocations> model(problem);
+    FSRPDE<decltype(problem), fdaPDE::models::GeoStatLocations> model(problem);
+
+    // load locations from .csv files
+    CSVFile<double> locsFile;
+    locsFile = reader.parseFile(test_directory + "locations.csv");
+    DMatrix<double> locs = locsFile.toEigen();
+    model.set_spatial_locations(locs);
 
     // set the lamnda
     double lambda = std::pow(0.1, 4);
     model.setLambdaS(lambda);
 
     // load data from .csv files
-    std::string test_directory = "data/models/FSRPDE/2D_test2/";
-    CSVReader<double> reader{};
     CSVFile<double> XFile; // observation file
     XFile = reader.parseFile(test_directory + "X_locations.csv");
     DMatrix<double> X = XFile.toEigen();
     CSVFile<double> bFile; // observation file
     bFile = reader.parseFile(test_directory + "b.csv");
     DMatrix<double> b = bFile.toEigen();
-    CSVFile<double> locsFile;
-    locsFile = reader.parseFile(test_directory + "locations.csv");
-    DMatrix<double> locs = locsFile.toEigen();
 
     // set model data
     BlockFrame<double, int> df;
     df.insert(OBSERVATIONS_BLK, X);
     df.insert(DESIGN_MATRIX_BLK, b);
     model.setData(df);
-    model.setLocations(locs);
 
     // solve smoothing problem
     model.init();
@@ -157,6 +159,9 @@ TEST(FSRPDE, Test2_Laplacian_SemiParametric_GeostatisticalAtLocations)
    */
 TEST(FSRPDE, Test3_Laplacian_SemiParametric_GeostatisticalAtLocations_less)
 {
+    std::string test_directory = "data/models/FSRPDE/2D_test3/";
+    CSVReader<double> reader{};
+
     // define domain and regularizing PDE
     MeshLoader<Mesh2D<>> domain("unit_square");
     auto L = Laplacian();
@@ -164,31 +169,31 @@ TEST(FSRPDE, Test3_Laplacian_SemiParametric_GeostatisticalAtLocations_less)
     PDE problem(domain.mesh, L, u); // definition of regularizing PDE
 
     // define statistical model
-    FSRPDE<decltype(problem), Sampling::GeoStatLocations> model(problem);
+    FSRPDE<decltype(problem), fdaPDE::models::GeoStatLocations> model(problem);
 
-    // set lambda
+    // load locations from .csv files
+    CSVFile<double> locsFile;
+    locsFile = reader.parseFile(test_directory + "locations.csv");
+    DMatrix<double> locs = locsFile.toEigen();
+    model.set_spatial_locations(locs);
+
+    // set the lamnda
     double lambda = std::pow(0.1, 4);
     model.setLambdaS(lambda);
 
     // load data from .csv files
-    std::string test_directory = "data/models/FSRPDE/2D_test3/";
-    CSVReader<double> reader{};
     CSVFile<double> XFile; // observation file
     XFile = reader.parseFile(test_directory + "X_locations.csv");
     DMatrix<double> X = XFile.toEigen();
     CSVFile<double> bFile; // observation file
     bFile = reader.parseFile(test_directory + "b.csv");
     DMatrix<double> b = bFile.toEigen();
-    CSVFile<double> locsFile;
-    locsFile = reader.parseFile(test_directory + "locations.csv");
-    DMatrix<double> locs = locsFile.toEigen();
 
     // set model data
     BlockFrame<double, int> df;
     df.insert(OBSERVATIONS_BLK, X);
     df.insert(DESIGN_MATRIX_BLK, b);
     model.setData(df);
-    model.setLocations(locs);
 
     // solve smoothing problem
     model.init();
@@ -218,6 +223,9 @@ TEST(FSRPDE, Test3_Laplacian_SemiParametric_GeostatisticalAtLocations_less)
    */
 TEST(FSRPDE, Test4_Laplacian_SemiParametric_GeostatisticalAtLocations_sub)
 {
+    std::string test_directory = "data/models/FSRPDE/2D_test4/";
+    CSVReader<double> reader{};
+
     // define domain and regularizing PDE
     MeshLoader<Mesh2D<>> domain("unit_square");
     auto L = Laplacian();
@@ -225,31 +233,31 @@ TEST(FSRPDE, Test4_Laplacian_SemiParametric_GeostatisticalAtLocations_sub)
     PDE problem(domain.mesh, L, u); // definition of regularizing PDE
 
     // define statistical model
-    FSRPDE<decltype(problem), Sampling::GeoStatLocations> model(problem);
+    FSRPDE<decltype(problem), fdaPDE::models::GeoStatLocations> model(problem);
 
-    // set lambda
+    // load locations from .csv files
+    CSVFile<double> locsFile;
+    locsFile = reader.parseFile(test_directory + "locations.csv");
+    DMatrix<double> locs = locsFile.toEigen();
+    model.set_spatial_locations(locs);
+
+    // set the lamnda
     double lambda = std::pow(0.1, 4);
     model.setLambdaS(lambda);
 
     // load data from .csv files
-    std::string test_directory = "data/models/FSRPDE/2D_test4/";
-    CSVReader<double> reader{};
     CSVFile<double> XFile; // observation file
     XFile = reader.parseFile(test_directory + "X_locations.csv");
     DMatrix<double> X = XFile.toEigen();
     CSVFile<double> bFile; // observation file
     bFile = reader.parseFile(test_directory + "b.csv");
     DMatrix<double> b = bFile.toEigen();
-    CSVFile<double> locsFile;
-    locsFile = reader.parseFile(test_directory + "locations.csv");
-    DMatrix<double> locs = locsFile.toEigen();
 
     // set model data
     BlockFrame<double, int> df;
     df.insert(OBSERVATIONS_BLK, X);
     df.insert(DESIGN_MATRIX_BLK, b);
     model.setData(df);
-    model.setLocations(locs);
 
     // solve smoothing problem
     model.init();
