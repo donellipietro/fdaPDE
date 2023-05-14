@@ -4,8 +4,10 @@ template <typename PDE, typename RegularizationType,
 void FPLSR<PDE, RegularizationType, SamplingDesign, lambda_selection_strategy>::init_model()
 {
 
+    // std::cout << "init_model" << std::endl;
+
     // require zero-mean response and covariates
-    this->setCenter(true);
+    this->set_center(true);
 
     // residuals definition
     df_residuals_.insert<double>(OBSERVATIONS_BLK, this->Y());
@@ -21,6 +23,9 @@ void FPLSR<PDE, RegularizationType, SamplingDesign, lambda_selection_strategy>::
     // spatial matrices
     PsiTPsi_ = PsiTD() * Psi();
     invPsiTPsi_.compute(PsiTPsi_);
+
+    // std::cout << "init_model" << std::endl;
+
     return;
 }
 
@@ -51,15 +56,32 @@ void FPLSR<PDE, RegularizationType, SamplingDesign, lambda_selection_strategy>::
         W_.col(h) = pe.f();
         V_.col(h) = pe.s();
 
+        // normalization of the directions
+        // std::cout << "normalization" << std::endl;
+        W_.col(h) /= std::sqrt(W_.col(h).dot(R0() * W_.col(h)));
+        V_.col(h) /= V_.col(h).norm();
+
         // compute the latent variable
         // std::cout << "latent variable" << std::endl;
-        T_.col(h) = E() * Psi() * W_.col(h);
+        if (this->full_functional_)
+            T_.col(h) = E() * R0() * W_.col(h);
+        else
+            T_.col(h) = E() * Psi() * W_.col(h);
+
         double tTt = T_.col(h).squaredNorm();
 
         // regression
         // std::cout << "regression" << std::endl;
-        C_.col(h) = this->smoother_.compute(E(), T_.col(h)).transpose();
         D_.col(h) = F().transpose() * T_.col(h) / tTt;
+        if (this->full_functional_)
+            C_.col(h) = E().transpose() * T_.col(h) / tTt;
+        else
+        {
+            if (smoothing_regression_)
+                C_.col(h) = this->smoother_.compute(E(), T_.col(h)).transpose();
+            else
+                C_.col(h) = invPsiTPsi().solve(PsiTD() * E().transpose() * T_.col(h)) / tTt;
+        }
 
         // deflation
         // std::cout << "deflation" << std::endl;
@@ -67,8 +89,16 @@ void FPLSR<PDE, RegularizationType, SamplingDesign, lambda_selection_strategy>::
         F() -= T_.col(h) * D_.col(h).transpose();
     }
 
-    auto invAUX = (C_.transpose() * PsiTPsi() * W_).partialPivLu();
-    this->B_ = W_ * invAUX.solve(D_.transpose());
+    if (this->full_functional_)
+    {
+        auto invAUX = (C_.transpose() * R0() * W_).partialPivLu();
+        this->B_ = W_ * invAUX.solve(D_.transpose());
+    }
+    else
+    {
+        auto invAUX = (C_.transpose() * PsiTPsi() * W_).partialPivLu();
+        this->B_ = W_ * invAUX.solve(D_.transpose());
+    }
 
     // std::cout << "solve FPLSR" << std::endl;
 

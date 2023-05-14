@@ -58,62 +58,88 @@ TEST(FPLSR, Test_comparison_Laplacian_GeostatisticalAtNodes)
   // reader
   CSVReader<double> reader{};
 
-  for (unsigned int i : tests)
+  // Tests options
+  std::vector<std::string> test_name_vect = {"hcpp", "sr", "sri"};
+  std::vector<bool> smoothing_initialization_vect = {false, false, true};
+  std::vector<bool> smoothing_regression_vect = {false, true, true};
+  std::vector<bool> full_functional_vect = {true, false, false};
+
+  for (unsigned int t = 0; t < test_name_vect.size(); ++t)
   {
 
-    if (VERBOSE)
-    {
-      std::cout << "##########" << std::endl;
-      std::cout << "# Test " << i << " #" << std::endl;
-      std::cout << "##########" << std::endl;
-    }
+    std::string test_name = test_name_vect[t];
+    bool smoothing_initialization = smoothing_initialization_vect[t];
+    bool smoothing_regression = smoothing_regression_vect[t];
+    bool full_functional = full_functional_vect[t];
 
-    std::string test_directory = tests_directory + "test" + std::to_string(i) + "/";
-    std::string results_directory = test_directory + "results/";
-    if (!std::filesystem::exists(results_directory))
-      std::filesystem::create_directory(results_directory);
-
-    for (unsigned int j = 1; j <= n_batches; ++j)
+    for (unsigned int i : tests)
     {
 
-      // load data from .csv files
-      CSVFile<double> yFile;
-      yFile = reader.parseFile(test_directory + "Y_" + std::to_string(j) + ".csv");
-      DMatrix<double> Y = yFile.toEigen();
-      CSVFile<double> xFile;
-      xFile = reader.parseFile(test_directory + "X_" + std::to_string(j) + ".csv");
-      DMatrix<double> X = xFile.toEigen();
+      if (VERBOSE)
+      {
+        std::cout << "##########" << std::endl;
+        std::cout << "# Test " << i << " #" << std::endl;
+        std::cout << "##########" << std::endl;
+      }
 
-      // set smoothing parameter
-      double lambda = 10;
-      model.setLambdaS(lambda);
+      std::string test_directory = tests_directory + "test" + std::to_string(i) + "/";
+      std::string results_directory = test_directory + "results/";
+      if (!std::filesystem::exists(results_directory))
+        std::filesystem::create_directory(results_directory);
 
-      // set model data
-      BlockFrame<double, int> df_data;
-      df_data.insert(OBSERVATIONS_BLK, Y);
-      df_data.insert(DESIGN_MATRIX_BLK, X);
-      model.setData(df_data);
+      for (unsigned int j = 1; j <= n_batches; ++j)
+      {
 
-      // solve smoothing problem
-      model.init();
-      model.solve();
+        // load data from .csv files
+        CSVFile<double> yFile;
+        yFile = reader.parseFile(test_directory + "Y_" + std::to_string(j) + ".csv");
+        DMatrix<double> Y = yFile.toEigen();
+        CSVFile<double> xFile;
+        xFile = reader.parseFile(test_directory + "X_" + std::to_string(j) + ".csv");
+        DMatrix<double> X = xFile.toEigen();
 
-      //   **  export computed results  **   //
+        // set smoothing parameter
+        double lambda = 10;
+        model.setLambdaS(lambda);
 
-      // output file
-      std::ofstream outfile;
+        // disable smoothing for initialization and regression
+        model.set_smoothing(smoothing_initialization, smoothing_regression);
 
-      // Results
-      DMatrix<double> Y_hat{model.fitted()};
-      DMatrix<double> B_hat{model.B()};
+        // full_functional: true -> harold's implementation, false -> correct implementation
+        model.set_full_functional(full_functional);
 
-      outfile.open(results_directory + "Y_hat_" + std::to_string(j) + ".csv");
-      outfile << Y_hat.format(CSVFormat2);
-      outfile.close();
+        // set model data
+        BlockFrame<double, int> df_data;
+        df_data.insert(OBSERVATIONS_BLK, Y);
+        df_data.insert(DESIGN_MATRIX_BLK, X);
+        model.setData(df_data);
 
-      outfile.open(results_directory + "B_hat_" + std::to_string(j) + ".csv");
-      outfile << B_hat.format(CSVFormat2);
-      outfile.close();
+        // solve smoothing problem
+        model.init();
+        model.solve();
+
+        //   **  export computed results  **   //
+
+        // output file
+        std::ofstream outfile;
+
+        // Results
+        DMatrix<double> Y_hat{model.fitted()};
+        DMatrix<double> B_hat{model.B()};
+        DMatrix<double> X_hat{model.reconstructed_field()};
+
+        outfile.open(results_directory + "Y_hat_" + test_name + "_" + std::to_string(j) + ".csv");
+        outfile << Y_hat.format(CSVFormat2);
+        outfile.close();
+
+        outfile.open(results_directory + "B_hat_" + test_name + "_" + std::to_string(j) + ".csv");
+        outfile << B_hat.format(CSVFormat2);
+        outfile.close();
+
+        outfile.open(results_directory + "X_hat_" + test_name + "_" + std::to_string(j) + ".csv");
+        outfile << X_hat.format(CSVFormat2);
+        outfile.close();
+      }
     }
   }
 }

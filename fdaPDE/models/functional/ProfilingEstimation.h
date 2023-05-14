@@ -120,7 +120,10 @@ namespace fdaPDE
         return;
       }
       // getters
-      const DVector<double> &f() const { return solver_.f(); }
+      const DVector<double> f() const
+      {
+        return solver_.f();
+      }
       const DVector<double> &fitted() const { return f_; } // vector f at convergence
       const DVector<double> &s() const { return s_; }      // vector s at convergence
       double gcv() { return gcv_.eval(); }                 // GCV index at convergence

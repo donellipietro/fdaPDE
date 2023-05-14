@@ -36,6 +36,9 @@ namespace fdaPDE
             // default number of latent components
             std::size_t H_ = 3;
 
+            // smoothing
+            bool smoothing_regression_ = true;
+
             // spatial matrices
             SpMatrix<double> PsiTPsi_{};
             fdaPDE::SparseLU<SpMatrix<double>> invPsiTPsi_;
@@ -84,6 +87,7 @@ namespace fdaPDE
             const DMatrix<double> &F() const { return df_residuals_.template get<double>(OBSERVATIONS_BLK); }
             const DMatrix<double> &E() const { return df_residuals_.template get<double>(DESIGN_MATRIX_BLK); }
             const DMatrix<double> &W() const { return W_; }
+            const DMatrix<double> &V() const { return V_; }
             const DMatrix<double> &T() const { return T_; }
             const DMatrix<double> &C() const { return C_; }
             const DMatrix<double> &D() const { return D_; }
@@ -94,6 +98,17 @@ namespace fdaPDE
             void set_tolerance(double tol) { tol_ = tol; }
             void set_max_iterations(std::size_t max_iter) { max_iter_ = max_iter; }
             void set_H(std::size_t H) { H_ = H; }
+            void set_full_functional(bool full_functional) { this->full_functional_ = full_functional; }
+            void set_smoothing(bool smoothing)
+            {
+                this->smoothing_initialization_ = smoothing;
+                smoothing_regression_ = smoothing;
+            }
+            void set_smoothing(bool smoothing_initialization, bool smoothing_regression)
+            {
+                this->smoothing_initialization_ = smoothing_initialization;
+                smoothing_regression_ = smoothing_regression;
+            }
 
             // methods
             DMatrix<double> reconstructed_field() const

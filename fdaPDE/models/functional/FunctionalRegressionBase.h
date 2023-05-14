@@ -39,6 +39,12 @@ namespace fdaPDE
             typedef typename FSRPDE_smoother<Model>::type SmootherType;
             SmootherType smoother_;
 
+            // version implemented in R
+            bool full_functional_ = false;
+
+            // smoothing
+            bool smoothing_initialization_ = true;
+
             // centering
             bool center_;
             DVector<double> Y_mean_;
@@ -72,7 +78,7 @@ namespace fdaPDE
                 // std::cout << "initialization FunctionalRegressionBase" << std::endl;
 
                 // smoother initialization
-                smoother_.setLambdaS(1e-5);
+                smoother_.setLambdaS(1e-12);
 
                 // std::cout << "initialization FunctionalRegressionBase" << std::endl;
             };
@@ -95,13 +101,14 @@ namespace fdaPDE
                 pde_ = rhs.pde_;
                 // smoother initialization
                 smoother_.setPDE(pde_);
-                smoother_.setLambdaS(1e-4);
+                smoother_.setLambdaS(1e-12);
 
                 // std::cout << "initialization FunctionalRegressionBase" << std::endl;
             }
 
             // setters
-            void setCenter(bool center) { center_ = center; }
+            void set_center(bool center) { center_ = center; }
+            void set_smoothing(bool smoothing) { smoothing_initialization_ = smoothing; }
 
             // getters
             std::size_t q() const { return df_.hasBlock(DESIGN_MATRIX_BLK) ? df_.template get<double>(DESIGN_MATRIX_BLK).cols() : 0; }
@@ -132,12 +139,20 @@ namespace fdaPDE
                 // centered data
                 // std::cout << "update to data" << std::endl;
                 Y_mean_ = Y_original().colwise().mean();
-                // std::cout << "update to data" << std::endl;
-                X_mean_ = smoother_.compute(X_original()).transpose();
-                // std::cout << "update to data" << std::endl;
-                const DVector<double> X_mean_at_locations = smoother_.fitted().transpose();
                 df_centered_.insert<double>(OBSERVATIONS_BLK, Y_original().rowwise() - Y_mean().transpose());
-                df_centered_.insert<double>(DESIGN_MATRIX_BLK, X_original().rowwise() - X_mean_at_locations.transpose());
+                // std::cout << "update to data" << std::endl;
+                if (smoothing_initialization_)
+                {
+                    X_mean_ = smoother_.compute(X_original()).transpose();
+                    const DVector<double> X_mean_at_locations = smoother_.fitted().transpose();
+                    df_centered_.insert<double>(DESIGN_MATRIX_BLK, X_original().rowwise() - X_mean_at_locations.transpose());
+                }
+                else
+                {
+                    X_mean_ = X_original().colwise().mean();
+                    df_centered_.insert<double>(DESIGN_MATRIX_BLK, X_original().rowwise() - X_mean_.transpose());
+                }
+                // std::cout << "update to data" << std::endl;
 
                 // dimensions
                 L_ = Y().cols();
@@ -153,7 +168,12 @@ namespace fdaPDE
             // \hat y = y_mean = X*Psi*B + y_mean
             DMatrix<double> fitted() const
             {
-                DMatrix<double> Y_hat = X() * Psi() * B_;
+                DMatrix<double> Y_hat(N_, L_);
+                if (full_functional_)
+                    Y_hat = X() * R0() * B_;
+                else
+                    Y_hat = X() * Psi() * B_;
+
                 if (center_)
                     Y_hat = Y_hat.rowwise() + Y_mean_.transpose();
                 return Y_hat;
@@ -167,7 +187,12 @@ namespace fdaPDE
                 if (center_)
                     X_new -= X_mean();
 
-                DMatrix<double> Y_hat = X_new.transpose() * Psi() * B_;
+                DMatrix<double> Y_hat(1, L_);
+                if (full_functional_)
+                    Y_hat = X_new.transpose() * R0() * B_;
+                else
+                    Y_hat = X_new.transpose() * Psi() * B_;
+
                 if (center_)
                     Y_hat += Y_mean_.transpose();
                 return Y_hat;
