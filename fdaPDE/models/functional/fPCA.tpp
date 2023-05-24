@@ -10,7 +10,7 @@ void FPCA<PDE, RegularizationType, SamplingDesign, lambda_selection_strategy>::s
   {
     // find vectors s,f minimizing \norm_F{Y - s^T*f}^2 + (s^T*s)*P(f) fixed \lambda
     pe.compute(X, lambda());
-    loadings_.col(i) = pe.fitted();
+    loadings_.col(i) = pe.f_n();
     scores_.col(i) = pe.s();
     // subtract computed PC from data
     X -= scores_.col(i) * loadings_.col(i).transpose();
@@ -41,7 +41,7 @@ void FPCA<PDE, RegularizationType, SamplingDesign, lambda_selection_strategy>::s
     opt.optimize(f, lambdas()); // select optimal \lambda for i-th PC
     // compute and store results given estimated optimal \lambda
     pe.compute(X, opt.optimum());
-    loadings_.col(i) = pe.fitted();
+    loadings_.col(i) = pe.f_n();
     scores_.col(i) = pe.s();
     // subtract computed PC from data
     X -= scores_.col(i) * loadings_.col(i).transpose();
