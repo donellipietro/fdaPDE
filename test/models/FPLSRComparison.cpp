@@ -59,10 +59,10 @@ TEST(FPLSR, Test_comparison_Laplacian_GeostatisticalAtNodes)
   CSVReader<double> reader{};
 
   // Tests options
-  std::vector<std::string> test_name_vect = {"hcpp", "sr", "sri"};
-  std::vector<bool> smoothing_initialization_vect = {false, false, true};
-  std::vector<bool> smoothing_regression_vect = {false, true, true};
-  std::vector<bool> full_functional_vect = {true, false, false};
+  std::vector<std::string> test_name_vect = {"hcpp", "ns", "sr", "sri"};
+  std::vector<bool> smoothing_initialization_vect = {false, false, false, true};
+  std::vector<bool> smoothing_regression_vect = {false, false, true, true};
+  std::vector<bool> full_functional_vect = {true, false, false, false};
 
   for (unsigned int t = 0; t < test_name_vect.size(); ++t)
   {
