@@ -51,6 +51,7 @@ namespace fdaPDE
             // getters
             DMatrix<double> f() const { return f_; }
             DMatrix<double> fitted() const { return f_ * solver_.PsiTD(); }
+            double lambdaS() const { return solver_.lambdaS(); }
 
             // setters
             void setPDE(const PDE &pde)
