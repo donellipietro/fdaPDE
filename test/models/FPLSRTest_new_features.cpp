@@ -26,6 +26,130 @@ using fdaPDE::testing::almost_equal;
 
 const static Eigen::IOFormat CSVFormat1(Eigen::StreamPrecision, Eigen::DontAlignCols, ",", "\n");
 
+void compareAndExportResults(const std::string &test_directory,
+                             const std::string &results_directory,
+                             const bool VERBOSE,
+                             const DMatrix<double> &Y_hat,
+                             const DMatrix<double> &X_hat,
+                             const DMatrix<double> &B_hat,
+                             std::vector<double> &errors_Y,
+                             std::vector<double> &errors_X,
+                             std::vector<double> &errors_B)
+{
+
+  // reader
+  CSVReader<double> reader{};
+
+  // output file
+  std::ofstream outfile;
+
+  // dimensions
+  const unsigned int N = X_hat.rows();
+  const unsigned int S = X_hat.cols();
+
+  CSVFile<double> file; // covariates file
+
+  // Y
+  file = reader.parseFile(test_directory + "Y_clean.csv");
+  DMatrix<double> Y_clean = file.toEigen();
+  errors_Y.push_back((Y_clean - Y_hat).squaredNorm() / N);
+  if (VERBOSE)
+  {
+    std::cout << std::endl;
+    std::cout << "||||||| Y ||||||||:" << std::endl;
+    std::cout << "Clean:" << std::endl;
+    std::cout << Y_clean.topRows(5) << std::endl;
+    std::cout << "Prediction:" << std::endl;
+    std::cout << Y_hat.topRows(5) << std::endl;
+    std::cout << "Error norm " << errors_Y.back() << std::endl;
+    std::cout << "----------------" << std::endl;
+    std::cout << std::endl;
+  }
+  outfile.open(results_directory + "Y_hat.csv");
+  outfile << Y_hat.format(CSVFormat1);
+  outfile.close();
+
+  // X
+  file = reader.parseFile(test_directory + "X_clean.csv");
+  DMatrix<double> X_clean = file.toEigen();
+  errors_X.push_back((X_clean - X_hat).squaredNorm() / (N * S));
+  if (VERBOSE)
+  {
+    std::cout << std::endl;
+    std::cout << "||||||| X ||||||||:" << std::endl;
+    std::cout << "Clean:" << std::endl;
+    std::cout << X_clean.block(0, 0, 5, 5) << std::endl;
+    std::cout << "Prediction:" << std::endl;
+    std::cout << X_hat.block(0, 0, 5, 5) << std::endl;
+    std::cout << "Error norm " << errors_X.back() << std::endl;
+    std::cout << "----------------" << std::endl;
+    std::cout << std::endl;
+  }
+  outfile.open(results_directory + "X_hat.csv");
+  outfile << X_hat.format(CSVFormat1);
+  outfile.close();
+
+  // B
+  file = reader.parseFile(test_directory + "B.csv");
+  DMatrix<double> B = file.toEigen();
+  errors_B.push_back((B - B_hat).squaredNorm() / (S));
+  if (VERBOSE)
+  {
+    std::cout << std::endl;
+    std::cout << "||||||| B ||||||||:" << std::endl;
+    std::cout << "Expected:" << std::endl;
+    std::cout << B.topRows(5) << std::endl;
+    std::cout << "Obtained version:" << std::endl;
+    std::cout << B_hat.topRows(5) << std::endl;
+    std::cout << "Error norm 1 " << errors_B.back() << std::endl;
+    std::cout << "----------------" << std::endl;
+    std::cout << std::endl;
+  }
+  outfile.open(results_directory + "B_hat.csv");
+  outfile << B_hat.format(CSVFormat1);
+  outfile.close();
+}
+
+void exportErrors(const std::string &tests_directory,
+                  const std::vector<unsigned int> &tests,
+                  const bool VERBOSE,
+                  const std::vector<double> &errors_Y,
+                  const std::vector<double> &errors_X,
+                  const std::vector<double> &errors_B,
+                  const std::string &subname = "")
+{
+  std::ofstream results(tests_directory + "errors" + subname + ".csv");
+  if (VERBOSE)
+  {
+    std::cout << std::endl;
+    std::cout << "Results: " << std::endl;
+    std::cout << std::setw(10) << std::left << "Tests"
+              << std::setw(12) << std::right << "Y_error"
+              << std::setw(12) << std::right << "X_error"
+              << std::setw(12) << std::right << "B_error" << std::endl;
+  }
+  results << "\"Test\",\"Y_error\",\"X_error\",\"B_error\"" << std::endl;
+  for (unsigned int i : tests)
+  {
+    if (VERBOSE)
+    {
+      std::string test_name = "Test " + std::to_string(i) + ":";
+      std::cout << std::setw(10) << std::left << test_name << std::right
+                << std::setw(12) << errors_Y[i - 1]
+                << std::setw(12) << errors_X[i - 1]
+                << std::setw(12) << errors_B[i - 1] << std::endl;
+    }
+    results << "\"Test" << i << "\","
+            << errors_Y[i - 1] << ","
+            << errors_X[i - 1] << ","
+            << errors_B[i - 1] << std::endl;
+  }
+  if (VERBOSE)
+    std::cout << std::endl;
+
+  results.close();
+}
+
 /* test 1:
    domain:       unit square [0,1] x [0,1]
    sampling:     locations = nodes
@@ -64,9 +188,6 @@ TEST(FPLSR, Test1_Laplacian_GeostatisticalAtNodes)
 
   // reader
   CSVReader<double> reader{};
-
-  // output file
-  std::ofstream outfile;
 
   for (unsigned int i : tests)
   {
@@ -116,87 +237,23 @@ TEST(FPLSR, Test1_Laplacian_GeostatisticalAtNodes)
 
     //   **  compare and export results  **   //
 
-    CSVFile<double> file; // covariates file
-
-    // Y
-    file = reader.parseFile(test_directory + "Y_clean.csv");
-    DMatrix<double> Y_clean = file.toEigen();
-    errors_Y.push_back((Y_clean - Y_hat).lpNorm<Eigen::Infinity>());
-    if (VERBOSE)
-    {
-      std::cout << "Expected:" << std::endl;
-      std::cout << Y_clean.topRows(5) << std::endl;
-      std::cout << "Obtained version:" << std::endl;
-      std::cout << Y_hat.topRows(5) << std::endl;
-      std::cout << "Error norm " << errors_Y.back() << std::endl;
-      std::cout << "----------------" << std::endl;
-    }
-    outfile.open(results_directory + "Y_hat.csv");
-    outfile << Y_hat.format(CSVFormat1);
-    outfile.close();
-
-    // X
-    file = reader.parseFile(test_directory + "X_clean.csv");
-    DMatrix<double> X_clean = file.toEigen();
-    errors_X.push_back((X_clean - X_hat).lpNorm<Eigen::Infinity>());
-    if (VERBOSE)
-    {
-      // std::cout << "Expected:" << std::endl;
-      // std::cout << X_clean.topRows(5) << std::endl;
-      // std::cout << "Obtained version:" << std::endl;
-      // std::cout << X_hat.topRows(5) << std::endl;
-      std::cout << "Error norm " << errors_X.back() << std::endl;
-      std::cout << "----------------" << std::endl;
-    }
-    outfile.open(results_directory + "X_hat.csv");
-    outfile << X_hat.format(CSVFormat1);
-    outfile.close();
-
-    // B
-    file = reader.parseFile(test_directory + "B.csv");
-    DMatrix<double> B = file.toEigen();
-    errors_B.push_back((B - B_hat).lpNorm<Eigen::Infinity>());
-    if (VERBOSE)
-    {
-      std::cout << "Expected:" << std::endl;
-      std::cout << B.topRows(5) << std::endl;
-      std::cout << "Obtained version:" << std::endl;
-      std::cout << B_hat.topRows(5) << std::endl;
-      std::cout << "Error norm 1 " << errors_B.back() << std::endl;
-      std::cout << "----------------" << std::endl;
-    }
-    outfile.open(results_directory + "B_hat.csv");
-    outfile << B_hat.format(CSVFormat1);
-    outfile.close();
+    compareAndExportResults(test_directory,
+                            results_directory,
+                            VERBOSE,
+                            Y_hat,
+                            X_hat,
+                            B_hat,
+                            errors_Y,
+                            errors_X,
+                            errors_B);
   }
 
-  std::ofstream results(tests_directory + "errors.csv");
-
-  if (VERBOSE)
-  {
-    std::cout << "Results: " << std::endl;
-    std::cout << std::setw(10) << std::left << "Tests"
-              << std::setw(12) << std::right << "Y_error"
-              << std::setw(12) << std::right << "X_error"
-              << std::setw(12) << std::right << "B_error" << std::endl;
-  }
-  results << "\"Test\",\"Y_error\",\"X_error\",\"B_error\"" << std::endl;
-  for (unsigned int i : tests)
-  {
-    if (VERBOSE)
-    {
-      std::string test_name = "Test " + std::to_string(i) + ":";
-      std::cout << std::setw(10) << std::left << test_name << std::right
-                << std::setw(12) << errors_Y[i - 1]
-                << std::setw(12) << errors_X[i - 1]
-                << std::setw(12) << errors_B[i - 1] << std::endl;
-    }
-    results << "\"Test" << i << "\","
-            << errors_Y[i - 1] << ","
-            << errors_X[i - 1] << ","
-            << errors_B[i - 1] << std::endl;
-  }
-  results.close();
+  exportErrors(tests_directory,
+               tests,
+               VERBOSE,
+               errors_Y,
+               errors_X,
+               errors_B);
 }
 
 /* test 2:
@@ -226,6 +283,15 @@ TEST(FPLSR, Test2_Laplacian_AtLocations)
   bool VERBOSE = false;
   std::vector<unsigned int> tests{1, 2, 3, 4, 5, 6};
 
+  // reader
+  CSVReader<double> reader{};
+
+  // output file
+  std::ofstream outfile;
+
+  // for (unsigned int x = 1; x <= 6; ++x)
+  // {
+
   // room to store the errors
   std::vector<double> errors_Y;
   std::vector<double> errors_X;
@@ -234,11 +300,8 @@ TEST(FPLSR, Test2_Laplacian_AtLocations)
   errors_X.reserve(tests.size());
   errors_B.reserve(tests.size());
 
-  // reader
-  CSVReader<double> reader{};
-
-  // output file
-  std::ofstream outfile;
+  // double lambda_smoothing = pow(10, -static_cast<double>(x));
+  double lambda_smoothing = 1e-3;
 
   for (unsigned int i : tests)
   {
@@ -252,7 +315,7 @@ TEST(FPLSR, Test2_Laplacian_AtLocations)
 
     // directories
     std::string test_directory = tests_directory + "test" + std::to_string(i) + "/";
-    std::string results_directory = test_directory + "results/";
+    std::string results_directory = test_directory + "results" + /* "_lambda1e-" + std::to_string(x) + */ "/";
     if (!std::filesystem::exists(results_directory))
       std::filesystem::create_directory(results_directory);
 
@@ -268,11 +331,15 @@ TEST(FPLSR, Test2_Laplacian_AtLocations)
     double lambda = 10;
     model.setLambdaS(lambda);
 
+    // set smoothing in initialization and regression
+    model.set_smoothing(true, true, lambda_smoothing, lambda_smoothing);
+
     // set number of latent components
     // model.set_H(3);
 
     // load data from .csv files
-    CSVFile<double> yFile; // observation file
+    CSVFile<double>
+        yFile; // observation file
     yFile = reader.parseFile(test_directory + "Y.csv");
     DMatrix<double> Y = yFile.toEigen();
     CSVFile<double> xFile; // covariates file
@@ -296,87 +363,24 @@ TEST(FPLSR, Test2_Laplacian_AtLocations)
 
     //   **  compare and export results  **   //
 
-    CSVFile<double> file; // covariates file
-
-    // Y
-    file = reader.parseFile(test_directory + "Y_clean.csv");
-    DMatrix<double> Y_clean = file.toEigen();
-    errors_Y.push_back((Y_clean - Y_hat).lpNorm<Eigen::Infinity>());
-    if (VERBOSE)
-    {
-      std::cout << "Expected:" << std::endl;
-      std::cout << Y_clean.topRows(5) << std::endl;
-      std::cout << "Obtained version:" << std::endl;
-      std::cout << Y_hat.topRows(5) << std::endl;
-      std::cout << "Error norm " << errors_Y.back() << std::endl;
-      std::cout << "----------------" << std::endl;
-    }
-    outfile.open(results_directory + "Y_hat.csv");
-    outfile << Y_hat.format(CSVFormat1);
-    outfile.close();
-
-    // X
-    file = reader.parseFile(test_directory + "X_clean.csv");
-    DMatrix<double> X_clean = file.toEigen();
-    errors_X.push_back((X_clean - X_hat).lpNorm<Eigen::Infinity>());
-    if (VERBOSE)
-    {
-      // std::cout << "Expected:" << std::endl;
-      // std::cout << X_clean.topRows(5) << std::endl;
-      // std::cout << "Obtained version:" << std::endl;
-      // std::cout << X_hat.topRows(5) << std::endl;
-      std::cout << "Error norm " << errors_X.back() << std::endl;
-      std::cout << "----------------" << std::endl;
-    }
-    outfile.open(results_directory + "X_hat.csv");
-    outfile << X_hat.format(CSVFormat1);
-    outfile.close();
-
-    // B
-    file = reader.parseFile(test_directory + "B.csv");
-    DMatrix<double> B = file.toEigen();
-    errors_B.push_back((B - B_hat).lpNorm<Eigen::Infinity>());
-    if (VERBOSE)
-    {
-      std::cout << "Expected:" << std::endl;
-      std::cout << B.topRows(5) << std::endl;
-      std::cout << "Obtained version:" << std::endl;
-      std::cout << B_hat.topRows(5) << std::endl;
-      std::cout << "Error norm 1 " << errors_B.back() << std::endl;
-      std::cout << "----------------" << std::endl;
-    }
-    outfile.open(results_directory + "B_hat.csv");
-    outfile << B_hat.format(CSVFormat1);
-    outfile.close();
+    compareAndExportResults(test_directory,
+                            results_directory,
+                            VERBOSE,
+                            Y_hat,
+                            X_hat,
+                            B_hat,
+                            errors_Y,
+                            errors_X,
+                            errors_B);
   }
 
-  std::ofstream results(tests_directory + "errors.csv");
-
-  if (VERBOSE)
-  {
-    std::cout << "Results: " << std::endl;
-    std::cout << std::setw(10) << std::left << "Tests"
-              << std::setw(12) << std::right << "Y_error"
-              << std::setw(12) << std::right << "X_error"
-              << std::setw(12) << std::right << "B_error" << std::endl;
-  }
-  results << "\"Test\",\"Y_error\",\"X_error\",\"B_error\"" << std::endl;
-  for (unsigned int i : tests)
-  {
-    if (VERBOSE)
-    {
-      std::string test_name = "Test " + std::to_string(i) + ":";
-      std::cout << std::setw(10) << std::left << test_name << std::right
-                << std::setw(12) << errors_Y[i - 1]
-                << std::setw(12) << errors_X[i - 1]
-                << std::setw(12) << errors_B[i - 1] << std::endl;
-    }
-    results << "\"Test" << i << "\","
-            << errors_Y[i - 1] << ","
-            << errors_X[i - 1] << ","
-            << errors_B[i - 1] << std::endl;
-  }
-  results.close();
+  exportErrors(tests_directory,
+               tests,
+               VERBOSE,
+               errors_Y,
+               errors_X,
+               errors_B /*, "_lambda1e-" + std::to_string(x)*/);
+  //}
 }
 
 /* test 3:
@@ -476,87 +480,23 @@ TEST(FPLSR, Test3_Laplacian_AtLocations)
 
     //   **  compare and export results  **   //
 
-    CSVFile<double> file; // covariates file
-
-    // Y
-    file = reader.parseFile(test_directory + "Y_clean.csv");
-    DMatrix<double> Y_clean = file.toEigen();
-    errors_Y.push_back((Y_clean - Y_hat).lpNorm<Eigen::Infinity>());
-    if (VERBOSE)
-    {
-      std::cout << "Expected:" << std::endl;
-      std::cout << Y_clean.topRows(5) << std::endl;
-      std::cout << "Obtained version:" << std::endl;
-      std::cout << Y_hat.topRows(5) << std::endl;
-      std::cout << "Error norm " << errors_Y.back() << std::endl;
-      std::cout << "----------------" << std::endl;
-    }
-    outfile.open(results_directory + "Y_hat.csv");
-    outfile << Y_hat.format(CSVFormat1);
-    outfile.close();
-
-    // X
-    file = reader.parseFile(test_directory + "X_clean.csv");
-    DMatrix<double> X_clean = file.toEigen();
-    errors_X.push_back((X_clean - X_hat).lpNorm<Eigen::Infinity>());
-    if (VERBOSE)
-    {
-      // std::cout << "Expected:" << std::endl;
-      // std::cout << X_clean.topRows(5) << std::endl;
-      // std::cout << "Obtained version:" << std::endl;
-      // std::cout << X_hat.topRows(5) << std::endl;
-      std::cout << "Error norm " << errors_X.back() << std::endl;
-      std::cout << "----------------" << std::endl;
-    }
-    outfile.open(results_directory + "X_hat.csv");
-    outfile << X_hat.format(CSVFormat1);
-    outfile.close();
-
-    // B
-    file = reader.parseFile(test_directory + "B.csv");
-    DMatrix<double> B = file.toEigen();
-    errors_B.push_back((B - B_hat).lpNorm<Eigen::Infinity>());
-    if (VERBOSE)
-    {
-      std::cout << "Expected:" << std::endl;
-      std::cout << B.topRows(5) << std::endl;
-      std::cout << "Obtained version:" << std::endl;
-      std::cout << B_hat.topRows(5) << std::endl;
-      std::cout << "Error norm 1 " << errors_B.back() << std::endl;
-      std::cout << "----------------" << std::endl;
-    }
-    outfile.open(results_directory + "B_hat.csv");
-    outfile << B_hat.format(CSVFormat1);
-    outfile.close();
+    compareAndExportResults(test_directory,
+                            results_directory,
+                            VERBOSE,
+                            Y_hat,
+                            X_hat,
+                            B_hat,
+                            errors_Y,
+                            errors_X,
+                            errors_B);
   }
 
-  std::ofstream results(tests_directory + "errors.csv");
-
-  if (VERBOSE)
-  {
-    std::cout << "Results: " << std::endl;
-    std::cout << std::setw(10) << std::left << "Tests"
-              << std::setw(12) << std::right << "Y_error"
-              << std::setw(12) << std::right << "X_error"
-              << std::setw(12) << std::right << "B_error" << std::endl;
-  }
-  results << "\"Test\",\"Y_error\",\"X_error\",\"B_error\"" << std::endl;
-  for (unsigned int i : tests)
-  {
-    if (VERBOSE)
-    {
-      std::string test_name = "Test " + std::to_string(i) + ":";
-      std::cout << std::setw(10) << std::left << test_name << std::right
-                << std::setw(12) << errors_Y[i - 1]
-                << std::setw(12) << errors_X[i - 1]
-                << std::setw(12) << errors_B[i - 1] << std::endl;
-    }
-    results << "\"Test" << i << "\","
-            << errors_Y[i - 1] << ","
-            << errors_X[i - 1] << ","
-            << errors_B[i - 1] << std::endl;
-  }
-  results.close();
+  exportErrors(tests_directory,
+               tests,
+               VERBOSE,
+               errors_Y,
+               errors_X,
+               errors_B);
 }
 
 /* test 4:
@@ -656,85 +596,21 @@ TEST(FPLSR, Test4_Laplacian_AtLocations)
 
     //   **  compare and export results  **   //
 
-    CSVFile<double> file; // covariates file
-
-    // Y
-    file = reader.parseFile(test_directory + "Y_clean.csv");
-    DMatrix<double> Y_clean = file.toEigen();
-    errors_Y.push_back((Y_clean - Y_hat).lpNorm<Eigen::Infinity>());
-    if (VERBOSE)
-    {
-      std::cout << "Expected:" << std::endl;
-      std::cout << Y_clean.topRows(5) << std::endl;
-      std::cout << "Obtained version:" << std::endl;
-      std::cout << Y_hat.topRows(5) << std::endl;
-      std::cout << "Error norm " << errors_Y.back() << std::endl;
-      std::cout << "----------------" << std::endl;
-    }
-    outfile.open(results_directory + "Y_hat.csv");
-    outfile << Y_hat.format(CSVFormat1);
-    outfile.close();
-
-    // X
-    file = reader.parseFile(test_directory + "X_clean.csv");
-    DMatrix<double> X_clean = file.toEigen();
-    errors_X.push_back((X_clean - X_hat).lpNorm<Eigen::Infinity>());
-    if (VERBOSE)
-    {
-      // std::cout << "Expected:" << std::endl;
-      // std::cout << X_clean.topRows(5) << std::endl;
-      // std::cout << "Obtained version:" << std::endl;
-      // std::cout << X_hat.topRows(5) << std::endl;
-      std::cout << "Error norm " << errors_X.back() << std::endl;
-      std::cout << "----------------" << std::endl;
-    }
-    outfile.open(results_directory + "X_hat.csv");
-    outfile << X_hat.format(CSVFormat1);
-    outfile.close();
-
-    // B
-    file = reader.parseFile(test_directory + "B.csv");
-    DMatrix<double> B = file.toEigen();
-    errors_B.push_back((B - B_hat).lpNorm<Eigen::Infinity>());
-    if (VERBOSE)
-    {
-      std::cout << "Expected:" << std::endl;
-      std::cout << B.topRows(5) << std::endl;
-      std::cout << "Obtained version:" << std::endl;
-      std::cout << B_hat.topRows(5) << std::endl;
-      std::cout << "Error norm 1 " << errors_B.back() << std::endl;
-      std::cout << "----------------" << std::endl;
-    }
-    outfile.open(results_directory + "B_hat.csv");
-    outfile << B_hat.format(CSVFormat1);
-    outfile.close();
+    compareAndExportResults(test_directory,
+                            results_directory,
+                            VERBOSE,
+                            Y_hat,
+                            X_hat,
+                            B_hat,
+                            errors_Y,
+                            errors_X,
+                            errors_B);
   }
 
-  std::ofstream results(tests_directory + "errors.csv");
-
-  if (VERBOSE)
-  {
-    std::cout << "Results: " << std::endl;
-    std::cout << std::setw(10) << std::left << "Tests"
-              << std::setw(12) << std::right << "Y_error"
-              << std::setw(12) << std::right << "X_error"
-              << std::setw(12) << std::right << "B_error" << std::endl;
-  }
-  results << "\"Test\",\"Y_error\",\"X_error\",\"B_error\"" << std::endl;
-  for (unsigned int i : tests)
-  {
-    if (VERBOSE)
-    {
-      std::string test_name = "Test " + std::to_string(i) + ":";
-      std::cout << std::setw(10) << std::left << test_name << std::right
-                << std::setw(12) << errors_Y[i - 1]
-                << std::setw(12) << errors_X[i - 1]
-                << std::setw(12) << errors_B[i - 1] << std::endl;
-    }
-    results << "\"Test" << i << "\","
-            << errors_Y[i - 1] << ","
-            << errors_X[i - 1] << ","
-            << errors_B[i - 1] << std::endl;
-  }
-  results.close();
+  exportErrors(tests_directory,
+               tests,
+               VERBOSE,
+               errors_Y,
+               errors_X,
+               errors_B);
 }

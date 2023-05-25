@@ -158,7 +158,7 @@
 !test/data/models/FPLSR/2D_test*/*
 !test/data/models/FPLSR/2D_test*/test*/
 !test/data/models/FPLSR/2D_test*/test*/*
-test/data/models/FPLSR/2D_test*/errors.csv
+test/data/models/FPLSR/2D_test*/errors*.csv
 *.txt
 *.json
 *.cmake

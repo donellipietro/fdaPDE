@@ -39,6 +39,15 @@ void FPLSR<PDE, RegularizationType, SamplingDesign, lambda_selection_strategy>::
     // define internal solver
     ProfilingEstimation<decltype(*this)> pe(*this, tol_, max_iter_);
 
+    // set smoother smoothing parameter
+    if (this->smoother_.lambdaS() != lambda_smoothing_regression_)
+    {
+        std::cout << "lambda set to " << lambda_smoothing_regression_ << std::endl;
+        this->smoother_.setLambdaS(lambda_smoothing_regression_);
+    }
+    // std::cout << "lambda smoother_regression: " << this->smoother_.lambdaS() << std::endl;
+    // std::cout << "lambda regression_required: " << lambda_smoothing_regression_ << std::endl;
+
     // solver's data
     DMatrix<double> M(this->L_, this->S_);
 

@@ -44,6 +44,7 @@ namespace fdaPDE
 
             // smoothing
             bool smoothing_initialization_ = true;
+            double lambda_smoothing_initialization_ = 1e-12;
 
             // centering
             bool center_;
@@ -78,7 +79,7 @@ namespace fdaPDE
                 // std::cout << "initialization FunctionalRegressionBase" << std::endl;
 
                 // smoother initialization
-                smoother_.setLambdaS(1e-12);
+                smoother_.setLambdaS(lambda_smoothing_initialization_);
 
                 // std::cout << "initialization FunctionalRegressionBase" << std::endl;
             };
@@ -101,7 +102,7 @@ namespace fdaPDE
                 pde_ = rhs.pde_;
                 // smoother initialization
                 smoother_.setPDE(pde_);
-                smoother_.setLambdaS(1e-12);
+                smoother_.setLambdaS(lambda_smoothing_initialization_);
 
                 // std::cout << "initialization FunctionalRegressionBase" << std::endl;
             }
@@ -109,6 +110,15 @@ namespace fdaPDE
             // setters
             void set_center(bool center) { center_ = center; }
             void set_smoothing(bool smoothing) { smoothing_initialization_ = smoothing; }
+            void set_smoothing(bool smoothing, double lambda_smoothing_initialization)
+            {
+                smoothing_initialization_ = smoothing;
+                if (smoother_.lambdaS() != lambda_smoothing_initialization)
+                {
+                    lambda_smoothing_initialization_ = lambda_smoothing_initialization;
+                    smoother_.setLambdaS(lambda_smoothing_initialization_);
+                }
+            }
 
             // getters
             std::size_t q() const { return df_.hasBlock(DESIGN_MATRIX_BLK) ? df_.template get<double>(DESIGN_MATRIX_BLK).cols() : 0; }
@@ -143,6 +153,8 @@ namespace fdaPDE
                 // std::cout << "update to data" << std::endl;
                 if (smoothing_initialization_)
                 {
+                    // std::cout << "lambda smoother: " << smoother_.lambdaS() << std::endl;
+                    // std::cout << "lambda required: " << lambda_smoothing_initialization_ << std::endl;
                     X_mean_ = smoother_.compute(X_original()).transpose();
                     const DVector<double> X_mean_at_locations = smoother_.fitted().transpose();
                     df_centered_.insert<double>(DESIGN_MATRIX_BLK, X_original().rowwise() - X_mean_at_locations.transpose());
