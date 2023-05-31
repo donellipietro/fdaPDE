@@ -153,6 +153,8 @@
 !test/data/models/FSRPDE/2D_test3/*
 !test/data/models/FSRPDE/2D_test4/
 !test/data/models/FSRPDE/2D_test4/*
+!test/data/models/FSRPDE/2D_test5/
+!test/data/models/FSRPDE/2D_test5/*
 *.txt
 *.json
 *.cmake

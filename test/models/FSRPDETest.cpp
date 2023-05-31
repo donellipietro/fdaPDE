@@ -276,3 +276,73 @@ TEST(FSRPDE, Test4_Laplacian_SemiParametric_GeostatisticalAtLocations_sub)
     nodesfile << computedF.format(CSVFormat);
     nodesfile.close();
 }
+
+/* test 1
+   domain:       brain
+   sampling:     locations = nodes
+   penalization: simple laplacian
+   covariates:   no
+   BC:           no
+   order FE:     1
+ */
+TEST(FSRPDE, Test5_Laplacian_NonParametric_GeostatisticalAtNodes_Brain)
+{
+    // define domain and regularizing PDE
+    MeshLoader<Mesh3D<>> domain("brain");
+    auto L = Laplacian();
+    DMatrix<double> u = DMatrix<double>::Zero(domain.mesh.elements() * 4, 1);
+    PDE problem(domain.mesh, L, u); // definition of regularizing PDE
+
+    // define statistical model
+    FSRPDE<decltype(problem), fdaPDE::models::GeoStatMeshNodes> model(problem);
+
+    // set lambda
+    double lambda = std::pow(0.1, 4);
+    model.setLambdaS(lambda);
+
+    // load data from .csv files
+    std::string test_directory = "data/models/FSRPDE/2D_test5/";
+    CSVReader<double> reader{};
+    CSVFile<double> XFile; // observation file
+    XFile = reader.parseFile(test_directory + "z_map_CONTROL.csv");
+    DMatrix<double> X1 = XFile.toEigen();
+    XFile = reader.parseFile(test_directory + "z_map_SCHZ.csv");
+    DMatrix<double> X2 = XFile.toEigen();
+
+    // results
+    std::ofstream nodesfile;
+    DMatrix<double> computedF;
+    std::string results_directory = test_directory + "results/";
+    if (!std::filesystem::exists(results_directory))
+        std::filesystem::create_directory(results_directory);
+
+    // ** CONTROL ** //
+
+    // set model data
+    model.setData(X1);
+
+    // solve smoothing problem
+    model.init();
+    model.solve();
+
+    // export results
+    nodesfile.open(results_directory + "ctrl_mean_fdaPDE.csv");
+    computedF = model.f();
+    nodesfile << computedF.format(CSVFormat);
+    nodesfile.close();
+
+    // ** SCHZ ** //
+
+    // set model data
+    model.setData(X2);
+
+    // solve smoothing problem
+    model.init();
+    model.solve();
+
+    // export results
+    nodesfile.open(results_directory + "schz_mean_fdaPDE.csv");
+    computedF = model.f();
+    nodesfile << computedF.format(CSVFormat);
+    nodesfile.close();
+}
