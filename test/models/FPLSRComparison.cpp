@@ -61,7 +61,6 @@ TEST(FPLSR, Test_comparison_Laplacian_GeostatisticalAtNodes)
   CSVReader<double> reader{};
 
   // tests options
-  bool TEST = false;
   std::vector<std::string> test_name_vect = {"hcpp_l0", "ns_l0", "hcpp", "ns", "sr", "sri"};
   unsigned int n_test_options = test_name_vect.size();
   std::vector<bool> smoothing_initialization_vect = {false, false, false, false, false, true};
@@ -73,9 +72,13 @@ TEST(FPLSR, Test_comparison_Laplacian_GeostatisticalAtNodes)
   DMatrix<double> errors_Y;
   DMatrix<double> errors_X;
   DMatrix<double> errors_B;
+  DMatrix<double> errors_Y_train;
+  DMatrix<double> errors_X_train;
   errors_Y.resize(n_batches, n_test_options * n_tests);
   errors_X.resize(n_batches, n_test_options * n_tests);
   errors_B.resize(n_batches, n_test_options * n_tests);
+  errors_Y_train.resize(n_batches, n_test_options * n_tests);
+  errors_X_train.resize(n_batches, n_test_options * n_tests);
 
   // room for data and solutions
   DMatrix<double> B_clean;
@@ -125,18 +128,10 @@ TEST(FPLSR, Test_comparison_Laplacian_GeostatisticalAtNodes)
       X = xFile.toEigen();
 
       // load expected results data from .csv files
-      if (TEST)
-      {
-        yFile = reader.parseFile(test_directory + "Y_clean_" + std::to_string(j) + ".csv");
-        Y_clean = yFile.toEigen();
-        xFile = reader.parseFile(test_directory + "X_clean_" + std::to_string(j) + ".csv");
-        X_clean = xFile.toEigen();
-      }
-      else
-      {
-        Y_clean = Y;
-        X_clean = X;
-      }
+      yFile = reader.parseFile(test_directory + "Y_clean_" + std::to_string(j) + ".csv");
+      Y_clean = yFile.toEigen();
+      xFile = reader.parseFile(test_directory + "X_clean_" + std::to_string(j) + ".csv");
+      X_clean = xFile.toEigen();
       unsigned int batch_size = Y_clean.rows();
 
       for (unsigned int t = 0; t < test_name_vect.size(); ++t)
@@ -179,8 +174,9 @@ TEST(FPLSR, Test_comparison_Laplacian_GeostatisticalAtNodes)
         // compute errors
         errors_Y(j - 1, n_test_options * (i - 1) + t) = (Y_clean - Y_hat).squaredNorm() / batch_size;
         errors_X(j - 1, n_test_options * (i - 1) + t) = (X_clean - X_hat).squaredNorm() / (n_nodes * batch_size);
-        if (TEST)
-          errors_B(j - 1, n_test_options * (i - 1) + t) = (B_clean - B_hat).squaredNorm() / n_nodes;
+        errors_B(j - 1, n_test_options * (i - 1) + t) = (B_clean - B_hat).squaredNorm() / n_nodes;
+        errors_Y_train(j - 1, n_test_options * (i - 1) + t) = (Y - Y_hat).squaredNorm() / batch_size;
+        errors_X_train(j - 1, n_test_options * (i - 1) + t) = (X - X_hat).squaredNorm() / (n_nodes * batch_size);
 
         // output file
         std::ofstream outfile;
@@ -204,24 +200,21 @@ TEST(FPLSR, Test_comparison_Laplacian_GeostatisticalAtNodes)
   // output file
   std::ofstream outfile;
 
-  if (TEST)
-    outfile.open(tests_directory + "errors_Y.csv");
-  else
-    outfile.open(tests_directory + "errors_Y_train.csv");
+  outfile.open(tests_directory + "errors_Y.csv");
   outfile << errors_Y.format(CSVFormat2);
   outfile.close();
-
-  if (TEST)
-    outfile.open(tests_directory + "errors_X.csv");
-  else
-    outfile.open(tests_directory + "errors_X_train.csv");
-  outfile << errors_X.format(CSVFormat2);
+  outfile.open(tests_directory + "errors_Y_train.csv");
+  outfile << errors_Y_train.format(CSVFormat2);
   outfile.close();
 
-  if (TEST)
-  {
-    outfile.open(tests_directory + "errors_B.csv");
-    outfile << errors_B.format(CSVFormat2);
-    outfile.close();
-  }
+  outfile.open(tests_directory + "errors_X.csv");
+  outfile << errors_X.format(CSVFormat2);
+  outfile.close();
+  outfile.open(tests_directory + "errors_X_train.csv");
+  outfile << errors_X_train.format(CSVFormat2);
+  outfile.close();
+
+  outfile.open(tests_directory + "errors_B.csv");
+  outfile << errors_B.format(CSVFormat2);
+  outfile.close();
 }
