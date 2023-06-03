@@ -116,6 +116,11 @@ namespace fdaPDE
                 smoothing_regression_ = smoothing;
                 lambda_smoothing_regression_ = lambda_smoothing;
             }
+            void set_smoothing(bool smoothing_initialization, bool smoothing_regression)
+            {
+                this->smoothing_initialization_ = smoothing_initialization;
+                smoothing_regression_ = smoothing_regression;
+            }
             void set_smoothing(bool smoothing_initialization, bool smoothing_regression, double lambda_smoothing_initialization, double lambda_smoothing_regression)
             {
                 this->smoothing_initialization_ = smoothing_initialization;
