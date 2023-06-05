@@ -21,7 +21,7 @@ void FPLSR<PDE, RegularizationType, SamplingDesign, lambda_selection_strategy>::
     D_.resize(this->L_, H_);
 
     // spatial matrices
-    PsiTPsi_ = PsiTD() * Psi();
+    PsiTPsi_ = PsiTD(not_nan()) * Psi(not_nan());
     invPsiTPsi_.compute(PsiTPsi_);
 
     // std::cout << "init_model" << std::endl;
@@ -42,14 +42,15 @@ void FPLSR<PDE, RegularizationType, SamplingDesign, lambda_selection_strategy>::
     // set smoother smoothing parameter
     if (this->smoother_.lambdaS() != lambda_smoothing_regression_)
     {
-        std::cout << "lambda set to " << lambda_smoothing_regression_ << std::endl;
+        // std::cout << "lambda set to " << lambda_smoothing_regression_ << std::endl;
         this->smoother_.setLambdaS(lambda_smoothing_regression_);
     }
     // std::cout << "lambda smoother_regression: " << this->smoother_.lambdaS() << std::endl;
     // std::cout << "lambda regression_required: " << lambda_smoothing_regression_ << std::endl;
 
     // solver's data
-    DMatrix<double> M(this->L_, this->S_);
+    BlockFrame<double, int> M;
+    M.insert<double>(OBSERVATIONS_BLK, DMatrix<double>(this->L_, this->S_));
 
     // Latent Components computation
     for (std::size_t h = 0; h < H_; h++)
@@ -57,20 +58,20 @@ void FPLSR<PDE, RegularizationType, SamplingDesign, lambda_selection_strategy>::
         // std::cout << "Component " << h + 1 << ", lambda = " << lambda() << std::endl;
 
         // compute directions
-        M = F().transpose() * E(); // M = Y^T*X
+        M.get<double>(OBSERVATIONS_BLK) = F().transpose() * E(); // M = Y^T*X
         pe.compute(M, lambda());
 
         // store result
         // std::cout << "directions" << std::endl;
-        W_.col(h) = pe.f();
-        V_.col(h) = pe.s() / pe.s().norm();
+        W_.col(h) = pe.f() / pe.f_norm();
+        V_.col(h) = pe.s();
 
         // compute the latent variable
         // std::cout << "latent variable" << std::endl;
         if (this->full_functional_)
             T_.col(h) = E() * R0() * W_.col(h);
         else
-            T_.col(h) = E() * Psi() * W_.col(h);
+            T_.col(h) = E() * Psi(not_nan()) * W_.col(h);
 
         double tTt = T_.col(h).squaredNorm();
 
@@ -84,24 +85,24 @@ void FPLSR<PDE, RegularizationType, SamplingDesign, lambda_selection_strategy>::
             if (smoothing_regression_)
                 C_.col(h) = this->smoother_.compute(E(), T_.col(h)).transpose();
             else
-                C_.col(h) = invPsiTPsi().solve(PsiTD() * E().transpose() * T_.col(h)) / tTt;
+                C_.col(h) = invPsiTPsi().solve(PsiTD(not_nan()) * E().transpose() * T_.col(h)) / tTt;
         }
 
         // deflation
         // std::cout << "deflation" << std::endl;
-        E() -= T_.col(h) * C_.col(h).transpose() * PsiTD();
+        E() -= T_.col(h) * C_.col(h).transpose() * PsiTD(not_nan());
         F() -= T_.col(h) * D_.col(h).transpose();
     }
 
     if (this->full_functional_)
     {
         auto invAUX = (C_.transpose() * R0() * W_).partialPivLu();
-        this->B_ = W_ * invAUX.solve(D_.transpose());
+        this->PsiNaN_ = W_ * invAUX.solve(D_.transpose());
     }
     else
     {
         auto invAUX = (C_.transpose() * PsiTPsi() * W_).partialPivLu();
-        this->B_ = W_ * invAUX.solve(D_.transpose());
+        this->PsiNaN_ = W_ * invAUX.solve(D_.transpose());
     }
 
     // std::cout << "solve FPLSR" << std::endl;

@@ -54,19 +54,21 @@ namespace fdaPDE
             BlockFrame<double, int> df_centered_;
 
             // room for problem solution
-            DMatrix<double> B_{}; // estimate of the coefficient functions (K_ x L_ matrix)
+            DMatrix<double> PsiNaN_{}; // estimate of the coefficient functions (K_ x L_ matrix)
 
         public:
             IMPORT_MODEL_SYMBOLS;
             typedef typename model_traits<Model>::PDE PDE; // PDE used for regularization in space
             typedef typename select_regularization_type<Model>::type RegularizationType;
             typedef SamplingDesign<Model, typename model_traits<Model>::sampling> SamplingBase;
+            using FunctionalBase<Model>::n_stat_units;
             using RegularizationType::df_;     // BlockFrame for problem's data storage
             using RegularizationType::idx;     // indices of observations
             using RegularizationType::n_basis; // number of basis function over domain D
             using RegularizationType::pde_;    // differential operator L
             using SamplingBase::locs;          // matrix of spatial locations
             using SamplingBase::Psi;           // matrix of spatial basis evaluation at locations p_1 ... p_N
+            using SamplingBase::PsiTD;         // block \Psi^T*D
 
             FunctionalRegressionBase() = default;
             // space-only constructor
@@ -130,11 +132,11 @@ namespace fdaPDE
             const DMatrix<double> &X_centered() const { return df_centered_.template get<double>(DESIGN_MATRIX_BLK); } // centered covariates
             const DVector<double> &X_mean() const { return X_mean_; };                                                 // covariates mean
             const DMatrix<double> &X() const { return center_ ? X_centered() : X_original(); }                         // covariates used in the model
-            const DMatrix<double> &B() const { return B_; };
+            const DMatrix<double> &B() const { return PsiNaN_; };
 
             // Call this if the internal status of the model must be updated after a change in the data
             // (Called by ModelBase::setData() and executed after initialization of the block frame)
-            void update_to_data()
+            void init_data()
             {
 
                 // add locations to smoother solver
@@ -173,7 +175,7 @@ namespace fdaPDE
                 K_ = n_basis();
 
                 // solution
-                B_.resize(K_, L_);
+                PsiNaN_.resize(K_, L_);
             }
 
             // computes fitted values
@@ -182,9 +184,9 @@ namespace fdaPDE
             {
                 DMatrix<double> Y_hat(N_, L_);
                 if (full_functional_)
-                    Y_hat = X() * R0() * B_;
+                    Y_hat = X() * R0() * PsiNaN_;
                 else
-                    Y_hat = X() * Psi() * B_;
+                    Y_hat = X() * Psi(not_nan()) * PsiNaN_;
 
                 if (center_)
                     Y_hat = Y_hat.rowwise() + Y_mean_.transpose();
@@ -201,13 +203,59 @@ namespace fdaPDE
 
                 DMatrix<double> Y_hat(1, L_);
                 if (full_functional_)
-                    Y_hat = X_new.transpose() * R0() * B_;
+                    Y_hat = X_new.transpose() * R0() * PsiNaN_;
                 else
-                    Y_hat = X_new.transpose() * Psi() * B_;
+                    Y_hat = X_new.transpose() * Psi(not_nan()) * PsiNaN_;
 
                 if (center_)
                     Y_hat += Y_mean_.transpose();
                 return Y_hat;
+            }
+
+            // functional models' missing data logic
+            void init_nan()
+            {
+                /*
+                this->nan_idxs_.clear(); // clean previous missingness structure
+                this->nan_idxs_.resize(n_stat_units());
+                this->PsiNaN_.resize(n_stat_units());
+                // \Psi matrix dimensions
+                std::size_t n = Psi(not_nan()).rows();
+                std::size_t N = Psi(not_nan()).cols();
+                // for i-th statistical unit, analyze missingness structure and set \Psi_i
+                for (std::size_t i = 0; i < n_stat_units(); ++i)
+                {
+                    // derive missingness pattern for i-th statistical unit
+                    for (std::size_t j = 0; j < n_locs(); ++j)
+                    {
+                        if (std::isnan(X_original()(i, j))) // requires -ffast-math compiler flag to be disabled
+                            this->nan_idxs_[i].insert(j);
+                    }
+
+                    // NaN detected for this unit, start assembly
+                    if (!this->nan_idxs_[i].empty())
+                    {
+                        for (std::size_t i = 0; i < n_stat_units(); ++i)
+                        {
+                            this->PsiNaN_[i].resize(n, N); // reserve space
+                            std::vector<fdaPDE::Triplet<double>> tripletList;
+                            tripletList.reserve(n * N);
+                            for (int k = 0; k < Psi(not_nan()).outerSize(); ++k)
+                                for (SpMatrix<double>::InnerIterator it(Psi(not_nan()), k); it; ++it)
+                                {
+                                    if (this->nan_idxs_[i].find(it.row()) == this->nan_idxs_[i].end())
+                                        // no missing data at this location for i-th statistical unit
+                                        tripletList.emplace_back(it.row(), it.col(), it.value());
+                                }
+                            // finalize construction
+                            this->PsiNaN_[i].setFromTriplets(tripletList.begin(), tripletList.end());
+                            this->PsiNaN_[i].makeCompressed();
+                        }
+                    }
+                    // otherwise no matrix is assembled, full \Psi is returned by Psi(std::size_t) getter
+                }
+                */
+                return;
             }
         };
 

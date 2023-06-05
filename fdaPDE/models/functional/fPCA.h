@@ -6,12 +6,9 @@
 #include "../../core/OPT/optimizers/GridOptimizer.h"
 using fdaPDE::core::OPT::GridOptimizer;
 #include "../../calibration/GCV.h"
+#include "../../calibration/KFoldCV.h"
 using fdaPDE::calibration::GCV;
-#include "FunctionalBase.h"
-using fdaPDE::models::FunctionalBase;
-#include "ProfilingEstimation.h"
-#include "../../calibration/GCV.h"
-using fdaPDE::calibration::GCV;
+using fdaPDE::calibration::KFoldCV;
 #include "FunctionalBase.h"
 using fdaPDE::models::FunctionalBase;
 #include "ProfilingEstimation.h"
@@ -48,6 +45,8 @@ namespace fdaPDE
       IMPORT_MODEL_SYMBOLS;
       using Base::lambda;
       using Base::lambdas;
+      using Base::nan_idxs;
+      using Base::X;
       // constructor
       FPCA() = default;
       // space-only constructor
