@@ -4,19 +4,9 @@ void ModelBase<Model>::init(){
   init_pde();                    // init pde object
   model().init_regularization(); // init regularization term
   model().init_sampling(true);   // init \Psi matrix, always force recomputation
-
-  // init model's internals
+  model().init_nan();            // analyze and set missingness pattern
   model().init_model();
 }
-
-// a trait to detect if a model requires a preprocessing step
-template <typename Model, typename T = void>
-struct requires_update_to_data : std::false_type {};
-
-template <typename Model> 
-struct requires_update_to_data<
-  Model, std::void_t<decltype(std::declval<Model>().update_to_data())>
-  > : std::true_type {};
 
 // set model's data from blockframe
 template <typename Model>
@@ -29,24 +19,7 @@ void ModelBase<Model>::setData(const BlockFrame<double, int>& df, bool reindex) 
     for(std::size_t i = 0; i < n; ++i) idx(i,0) = i;
     df_.insert(INDEXES_BLK, idx);
   }
-  if(df_.hasBlock(OBSERVATIONS_BLK)) analyze_nan(); // analyze missing data
-  // update model to data, if requested
-  if constexpr(requires_update_to_data<Model>::value) model().update_to_data();
-  return;
-}
-
-// analyze missing data pattern, compute nan indices based on observation vector
-template <typename Model>
-void ModelBase<Model>::analyze_nan() {
-  BLOCK_FRAME_SANITY_CHECKS;
-  nan_idxs_.clear(); // empty nan set
-  for(std::size_t i = 0; i < n_obs(); ++i){
-    if(std::isnan(y()(i,0))){ // requires -ffast-math compiler flag to be disabled
-      nan_idxs_.insert(i);
-      df_.get<double>(OBSERVATIONS_BLK)(i,0) = 0.0; // zero out NaN
-    }
-  }
-  return;
+  model().init_data(); // specific initialization requested by the model
 }
 
 // set boundary conditions on problem's linear system
