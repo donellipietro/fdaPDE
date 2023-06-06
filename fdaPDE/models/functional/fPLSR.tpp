@@ -97,12 +97,12 @@ void FPLSR<PDE, RegularizationType, SamplingDesign, lambda_selection_strategy>::
     if (this->full_functional_)
     {
         auto invAUX = (C_.transpose() * R0() * W_).partialPivLu();
-        this->PsiNaN_ = W_ * invAUX.solve(D_.transpose());
+        this->B_ = W_ * invAUX.solve(D_.transpose());
     }
     else
     {
         auto invAUX = (C_.transpose() * PsiTPsi() * W_).partialPivLu();
-        this->PsiNaN_ = W_ * invAUX.solve(D_.transpose());
+        this->B_ = W_ * invAUX.solve(D_.transpose());
     }
 
     // std::cout << "solve FPLSR" << std::endl;

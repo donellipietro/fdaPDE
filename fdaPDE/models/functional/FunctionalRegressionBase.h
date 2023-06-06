@@ -54,7 +54,7 @@ namespace fdaPDE
             BlockFrame<double, int> df_centered_;
 
             // room for problem solution
-            DMatrix<double> PsiNaN_{}; // estimate of the coefficient functions (K_ x L_ matrix)
+            DMatrix<double> B_; // estimate of the coefficient functions (K_ x L_ matrix)
 
         public:
             IMPORT_MODEL_SYMBOLS;
@@ -132,7 +132,7 @@ namespace fdaPDE
             const DMatrix<double> &X_centered() const { return df_centered_.template get<double>(DESIGN_MATRIX_BLK); } // centered covariates
             const DVector<double> &X_mean() const { return X_mean_; };                                                 // covariates mean
             const DMatrix<double> &X() const { return center_ ? X_centered() : X_original(); }                         // covariates used in the model
-            const DMatrix<double> &B() const { return PsiNaN_; };
+            const DMatrix<double> &B() const { return B_; };
 
             // Call this if the internal status of the model must be updated after a change in the data
             // (Called by ModelBase::setData() and executed after initialization of the block frame)
@@ -175,7 +175,7 @@ namespace fdaPDE
                 K_ = n_basis();
 
                 // solution
-                PsiNaN_.resize(K_, L_);
+                B_.resize(K_, L_);
             }
 
             // computes fitted values
@@ -184,9 +184,9 @@ namespace fdaPDE
             {
                 DMatrix<double> Y_hat(N_, L_);
                 if (full_functional_)
-                    Y_hat = X() * R0() * PsiNaN_;
+                    Y_hat = X() * R0() * B_;
                 else
-                    Y_hat = X() * Psi(not_nan()) * PsiNaN_;
+                    Y_hat = X() * Psi(not_nan()) * B_;
 
                 if (center_)
                     Y_hat = Y_hat.rowwise() + Y_mean_.transpose();
@@ -203,9 +203,9 @@ namespace fdaPDE
 
                 DMatrix<double> Y_hat(1, L_);
                 if (full_functional_)
-                    Y_hat = X_new.transpose() * R0() * PsiNaN_;
+                    Y_hat = X_new.transpose() * R0() * B_;
                 else
-                    Y_hat = X_new.transpose() * Psi(not_nan()) * PsiNaN_;
+                    Y_hat = X_new.transpose() * Psi(not_nan()) * B_;
 
                 if (center_)
                     Y_hat += Y_mean_.transpose();
