@@ -24,130 +24,135 @@ using fdaPDE::testing::almost_equal;
 #include <fstream>
 #include <filesystem>
 
-const static Eigen::IOFormat CSVFormat1(Eigen::StreamPrecision, Eigen::DontAlignCols, ",", "\n");
-
-void compareAndExportResults(const std::string &test_directory,
-                             const std::string &results_directory,
-                             const bool VERBOSE,
-                             const DMatrix<double> &Y_hat,
-                             const DMatrix<double> &X_hat,
-                             const DMatrix<double> &B_hat,
-                             std::vector<double> &errors_Y,
-                             std::vector<double> &errors_X,
-                             std::vector<double> &errors_B)
+namespace Test_fPLSR_new_features
 {
 
-  // reader
-  CSVReader<double> reader{};
+  const static Eigen::IOFormat CSVFormat(Eigen::StreamPrecision, Eigen::DontAlignCols, ",", "\n");
 
-  // output file
-  std::ofstream outfile;
-
-  // dimensions
-  const unsigned int N = X_hat.rows();
-  const unsigned int S = X_hat.cols();
-
-  CSVFile<double> file; // covariates file
-
-  // Y
-  file = reader.parseFile(test_directory + "Y_clean.csv");
-  DMatrix<double> Y_clean = file.toEigen();
-  errors_Y.push_back((Y_clean - Y_hat).squaredNorm() / N);
-  if (VERBOSE)
+  void compareAndExportResults(const std::string &test_directory,
+                               const std::string &results_directory,
+                               const bool VERBOSE,
+                               const DMatrix<double> &Y_hat,
+                               const DMatrix<double> &X_hat,
+                               const DMatrix<double> &B_hat,
+                               std::vector<double> &errors_Y,
+                               std::vector<double> &errors_X,
+                               std::vector<double> &errors_B)
   {
-    std::cout << std::endl;
-    std::cout << "||||||| Y ||||||||:" << std::endl;
-    std::cout << "Clean:" << std::endl;
-    std::cout << Y_clean.topRows(5) << std::endl;
-    std::cout << "Prediction:" << std::endl;
-    std::cout << Y_hat.topRows(5) << std::endl;
-    std::cout << "Error norm " << errors_Y.back() << std::endl;
-    std::cout << "----------------" << std::endl;
-    std::cout << std::endl;
-  }
-  outfile.open(results_directory + "Y_hat.csv");
-  outfile << Y_hat.format(CSVFormat1);
-  outfile.close();
 
-  // X
-  file = reader.parseFile(test_directory + "X_clean.csv");
-  DMatrix<double> X_clean = file.toEigen();
-  errors_X.push_back((X_clean - X_hat).squaredNorm() / (N * S));
-  if (VERBOSE)
-  {
-    std::cout << std::endl;
-    std::cout << "||||||| X ||||||||:" << std::endl;
-    std::cout << "Clean:" << std::endl;
-    std::cout << X_clean.block(0, 0, 5, 5) << std::endl;
-    std::cout << "Prediction:" << std::endl;
-    std::cout << X_hat.block(0, 0, 5, 5) << std::endl;
-    std::cout << "Error norm " << errors_X.back() << std::endl;
-    std::cout << "----------------" << std::endl;
-    std::cout << std::endl;
-  }
-  outfile.open(results_directory + "X_hat.csv");
-  outfile << X_hat.format(CSVFormat1);
-  outfile.close();
+    // reader
+    CSVReader<double> reader{};
 
-  // B
-  file = reader.parseFile(test_directory + "B.csv");
-  DMatrix<double> B = file.toEigen();
-  errors_B.push_back((B - B_hat).squaredNorm() / (S));
-  if (VERBOSE)
-  {
-    std::cout << std::endl;
-    std::cout << "||||||| B ||||||||:" << std::endl;
-    std::cout << "Expected:" << std::endl;
-    std::cout << B.topRows(5) << std::endl;
-    std::cout << "Obtained version:" << std::endl;
-    std::cout << B_hat.topRows(5) << std::endl;
-    std::cout << "Error norm 1 " << errors_B.back() << std::endl;
-    std::cout << "----------------" << std::endl;
-    std::cout << std::endl;
-  }
-  outfile.open(results_directory + "B_hat.csv");
-  outfile << B_hat.format(CSVFormat1);
-  outfile.close();
-}
+    // output file
+    std::ofstream outfile;
 
-void exportErrors(const std::string &tests_directory,
-                  const std::vector<unsigned int> &tests,
-                  const bool VERBOSE,
-                  const std::vector<double> &errors_Y,
-                  const std::vector<double> &errors_X,
-                  const std::vector<double> &errors_B,
-                  const std::string &subname = "")
-{
-  std::ofstream results(tests_directory + "errors" + subname + ".csv");
-  if (VERBOSE)
-  {
-    std::cout << std::endl;
-    std::cout << "Results: " << std::endl;
-    std::cout << std::setw(10) << std::left << "Tests"
-              << std::setw(12) << std::right << "Y_error"
-              << std::setw(12) << std::right << "X_error"
-              << std::setw(12) << std::right << "B_error" << std::endl;
-  }
-  results << "\"Test\",\"Y_error\",\"X_error\",\"B_error\"" << std::endl;
-  for (unsigned int i : tests)
-  {
+    // dimensions
+    const unsigned int N = X_hat.rows();
+    const unsigned int S = X_hat.cols();
+
+    CSVFile<double> file; // covariates file
+
+    // Y
+    file = reader.parseFile(test_directory + "Y_clean.csv");
+    DMatrix<double> Y_clean = file.toEigen();
+    errors_Y.push_back((Y_clean - Y_hat).squaredNorm() / N);
     if (VERBOSE)
     {
-      std::string test_name = "Test " + std::to_string(i) + ":";
-      std::cout << std::setw(10) << std::left << test_name << std::right
-                << std::setw(12) << errors_Y[i - 1]
-                << std::setw(12) << errors_X[i - 1]
-                << std::setw(12) << errors_B[i - 1] << std::endl;
+      std::cout << std::endl;
+      std::cout << "||||||| Y ||||||||:" << std::endl;
+      std::cout << "Clean:" << std::endl;
+      std::cout << Y_clean.topRows(5) << std::endl;
+      std::cout << "Prediction:" << std::endl;
+      std::cout << Y_hat.topRows(5) << std::endl;
+      std::cout << "Error norm " << errors_Y.back() << std::endl;
+      std::cout << "----------------" << std::endl;
+      std::cout << std::endl;
     }
-    results << "\"Test" << i << "\","
-            << errors_Y[i - 1] << ","
-            << errors_X[i - 1] << ","
-            << errors_B[i - 1] << std::endl;
-  }
-  if (VERBOSE)
-    std::cout << std::endl;
+    outfile.open(results_directory + "Y_hat.csv");
+    outfile << Y_hat.format(Test_fPLSR_new_features::CSVFormat);
+    outfile.close();
 
-  results.close();
+    // X
+    file = reader.parseFile(test_directory + "X_clean.csv");
+    DMatrix<double> X_clean = file.toEigen();
+    errors_X.push_back((X_clean - X_hat).squaredNorm() / (N * S));
+    if (VERBOSE)
+    {
+      std::cout << std::endl;
+      std::cout << "||||||| X ||||||||:" << std::endl;
+      std::cout << "Clean:" << std::endl;
+      std::cout << X_clean.block(0, 0, 5, 5) << std::endl;
+      std::cout << "Prediction:" << std::endl;
+      std::cout << X_hat.block(0, 0, 5, 5) << std::endl;
+      std::cout << "Error norm " << errors_X.back() << std::endl;
+      std::cout << "----------------" << std::endl;
+      std::cout << std::endl;
+    }
+    outfile.open(results_directory + "X_hat.csv");
+    outfile << X_hat.format(Test_fPLSR_new_features::CSVFormat);
+    outfile.close();
+
+    // B
+    file = reader.parseFile(test_directory + "B.csv");
+    DMatrix<double> B = file.toEigen();
+    errors_B.push_back((B - B_hat).squaredNorm() / (S));
+    if (VERBOSE)
+    {
+      std::cout << std::endl;
+      std::cout << "||||||| B ||||||||:" << std::endl;
+      std::cout << "Expected:" << std::endl;
+      std::cout << B.topRows(5) << std::endl;
+      std::cout << "Obtained version:" << std::endl;
+      std::cout << B_hat.topRows(5) << std::endl;
+      std::cout << "Error norm 1 " << errors_B.back() << std::endl;
+      std::cout << "----------------" << std::endl;
+      std::cout << std::endl;
+    }
+    outfile.open(results_directory + "B_hat.csv");
+    outfile << B_hat.format(Test_fPLSR_new_features::CSVFormat);
+    outfile.close();
+  }
+
+  void exportErrors(const std::string &tests_directory,
+                    const std::vector<unsigned int> &tests,
+                    const bool VERBOSE,
+                    const std::vector<double> &errors_Y,
+                    const std::vector<double> &errors_X,
+                    const std::vector<double> &errors_B,
+                    const std::string &subname = "")
+  {
+    std::ofstream results(tests_directory + "errors" + subname + ".csv");
+    if (VERBOSE)
+    {
+      std::cout << std::endl;
+      std::cout << "Results: " << std::endl;
+      std::cout << std::setw(10) << std::left << "Tests"
+                << std::setw(12) << std::right << "Y_error"
+                << std::setw(12) << std::right << "X_error"
+                << std::setw(12) << std::right << "B_error" << std::endl;
+    }
+    results << "\"Test\",\"Y_error\",\"X_error\",\"B_error\"" << std::endl;
+    for (unsigned int i : tests)
+    {
+      if (VERBOSE)
+      {
+        std::string test_name = "Test " + std::to_string(i) + ":";
+        std::cout << std::setw(10) << std::left << test_name << std::right
+                  << std::setw(12) << errors_Y[i - 1]
+                  << std::setw(12) << errors_X[i - 1]
+                  << std::setw(12) << errors_B[i - 1] << std::endl;
+      }
+      results << "\"Test" << i << "\","
+              << errors_Y[i - 1] << ","
+              << errors_X[i - 1] << ","
+              << errors_B[i - 1] << std::endl;
+    }
+    if (VERBOSE)
+      std::cout << std::endl;
+
+    results.close();
+  }
+
 }
 
 /* test 1:
@@ -237,23 +242,23 @@ TEST(FPLSR, Test1_Laplacian_GeostatisticalAtNodes)
 
     //   **  compare and export results  **   //
 
-    compareAndExportResults(test_directory,
-                            results_directory,
-                            VERBOSE,
-                            Y_hat,
-                            X_hat,
-                            B_hat,
-                            errors_Y,
-                            errors_X,
-                            errors_B);
+    Test_fPLSR_new_features::compareAndExportResults(test_directory,
+                                                     results_directory,
+                                                     VERBOSE,
+                                                     Y_hat,
+                                                     X_hat,
+                                                     B_hat,
+                                                     errors_Y,
+                                                     errors_X,
+                                                     errors_B);
   }
 
-  exportErrors(tests_directory,
-               tests,
-               VERBOSE,
-               errors_Y,
-               errors_X,
-               errors_B);
+  Test_fPLSR_new_features::exportErrors(tests_directory,
+                                        tests,
+                                        VERBOSE,
+                                        errors_Y,
+                                        errors_X,
+                                        errors_B);
 }
 
 /* test 2:
@@ -363,23 +368,23 @@ TEST(FPLSR, Test2_Laplacian_AtLocations)
 
     //   **  compare and export results  **   //
 
-    compareAndExportResults(test_directory,
-                            results_directory,
-                            VERBOSE,
-                            Y_hat,
-                            X_hat,
-                            B_hat,
-                            errors_Y,
-                            errors_X,
-                            errors_B);
+    Test_fPLSR_new_features::compareAndExportResults(test_directory,
+                                                     results_directory,
+                                                     VERBOSE,
+                                                     Y_hat,
+                                                     X_hat,
+                                                     B_hat,
+                                                     errors_Y,
+                                                     errors_X,
+                                                     errors_B);
   }
 
-  exportErrors(tests_directory,
-               tests,
-               VERBOSE,
-               errors_Y,
-               errors_X,
-               errors_B /*, "_lambda1e-" + std::to_string(x)*/);
+  Test_fPLSR_new_features::exportErrors(tests_directory,
+                                        tests,
+                                        VERBOSE,
+                                        errors_Y,
+                                        errors_X,
+                                        errors_B /*, "_lambda1e-" + std::to_string(x)*/);
   //}
 }
 
@@ -480,23 +485,23 @@ TEST(FPLSR, Test3_Laplacian_AtLocations)
 
     //   **  compare and export results  **   //
 
-    compareAndExportResults(test_directory,
-                            results_directory,
-                            VERBOSE,
-                            Y_hat,
-                            X_hat,
-                            B_hat,
-                            errors_Y,
-                            errors_X,
-                            errors_B);
+    Test_fPLSR_new_features::compareAndExportResults(test_directory,
+                                                     results_directory,
+                                                     VERBOSE,
+                                                     Y_hat,
+                                                     X_hat,
+                                                     B_hat,
+                                                     errors_Y,
+                                                     errors_X,
+                                                     errors_B);
   }
 
-  exportErrors(tests_directory,
-               tests,
-               VERBOSE,
-               errors_Y,
-               errors_X,
-               errors_B);
+  Test_fPLSR_new_features::exportErrors(tests_directory,
+                                        tests,
+                                        VERBOSE,
+                                        errors_Y,
+                                        errors_X,
+                                        errors_B);
 }
 
 /* test 4:
@@ -596,21 +601,21 @@ TEST(FPLSR, Test4_Laplacian_AtLocations)
 
     //   **  compare and export results  **   //
 
-    compareAndExportResults(test_directory,
-                            results_directory,
-                            VERBOSE,
-                            Y_hat,
-                            X_hat,
-                            B_hat,
-                            errors_Y,
-                            errors_X,
-                            errors_B);
+    Test_fPLSR_new_features::compareAndExportResults(test_directory,
+                                                     results_directory,
+                                                     VERBOSE,
+                                                     Y_hat,
+                                                     X_hat,
+                                                     B_hat,
+                                                     errors_Y,
+                                                     errors_X,
+                                                     errors_B);
   }
 
-  exportErrors(tests_directory,
-               tests,
-               VERBOSE,
-               errors_Y,
-               errors_X,
-               errors_B);
+  Test_fPLSR_new_features::exportErrors(tests_directory,
+                                        tests,
+                                        VERBOSE,
+                                        errors_Y,
+                                        errors_X,
+                                        errors_B);
 }
