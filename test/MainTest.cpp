@@ -30,7 +30,7 @@
 #include "models/FPLSRTest_new_features.cpp"
 // #include "models/FPLSRComparison.cpp"
 #include "models/FSRPDETest.cpp"
-//  GCV test suites
+// GCV test suites
 // #include "calibration/GCVTest.cpp"
 // #include "calibration/GCVNewtonTest.cpp"
 // #include "calibration/GCVNewtonTest.cpp"

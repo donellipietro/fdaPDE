@@ -63,7 +63,7 @@ void FPLSR<PDE, RegularizationType, SamplingDesign, lambda_selection_strategy>::
 
         // store result
         // std::cout << "directions" << std::endl;
-        W_.col(h) = pe.f() / pe.f_norm();
+        W_.col(h) = pe.f() / pe.f_norm(); // / pe.f().norm();
         V_.col(h) = pe.s();
 
         // compute the latent variable
