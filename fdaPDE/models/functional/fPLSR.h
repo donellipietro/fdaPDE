@@ -6,7 +6,9 @@
 #include "../../core/OPT/optimizers/GridOptimizer.h"
 using fdaPDE::core::OPT::GridOptimizer;
 #include "../../calibration/GCV.h"
+#include "../../calibration/KFoldCV.h"
 using fdaPDE::calibration::GCV;
+using fdaPDE::calibration::KFoldCV;
 #include "FunctionalBase.h"
 using fdaPDE::models::FunctionalBase;
 #include "ProfilingEstimation.h"

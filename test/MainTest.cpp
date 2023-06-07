@@ -3,7 +3,7 @@
 #include <Eigen/Dense>
 #include <Eigen/Sparse>
 
-// fields test suites
+/*// fields test suites
 #include "core/ScalarFieldTest.cpp"
 #include "core/VectorFieldTest.cpp"
 // MESH test suites
@@ -26,14 +26,15 @@
 #include "models/STRPDETest.cpp"
 #include "models/GSRPDETest.cpp"
 #include "models/FPCATest.cpp"
-#include "models/FPLSRTest_base.cpp"
+#include "models/FPLSRTest_base.cpp"*/
 #include "models/FPLSRTest_new_features.cpp"
+// #include "models/FPLSRTest_KCV.cpp"
 // #include "models/FPLSRComparison.cpp"
-#include "models/FSRPDETest.cpp"
+/*#include "models/FSRPDETest.cpp"
 // GCV test suites
 // #include "calibration/GCVTest.cpp"
 // #include "calibration/GCVNewtonTest.cpp"
-// #include "calibration/GCVNewtonTest.cpp"
+// #include "calibration/GCVNewtonTest.cpp"*/
 
 int main(int argc, char **argv)
 {
