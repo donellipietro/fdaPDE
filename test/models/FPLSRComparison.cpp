@@ -48,30 +48,23 @@ TEST(FPLSR, Test_comparison_Laplacian_GeostatisticalAtNodes)
   DMatrix<double> u = DMatrix<double>::Zero(domain.mesh.elements() * 3, 1);
   PDE problem(domain.mesh, L, u); // definition of regularizing PDE
 
-  // define statistical model
-  FPLSR<decltype(problem),
-        SpaceOnly,
-        fdaPDE::models::GeoStatMeshNodes,
-        fdaPDE::models::fixed_lambda>
-      model(problem);
-
   // Tests
   std::string tests_directory = "data/models/FPLSR/2D_test_comparison/";
   bool VERBOSE = true;
   std::vector<unsigned int> tests{1, 2, 3, 4, 5, 6};
-  unsigned int n_batches = 10;
+  unsigned int n_batches = 8;
   unsigned int n_tests = tests.size();
 
   // reader
   CSVReader<double> reader{};
 
   // tests options
-  std::vector<std::string> test_name_vect = {"hcpp_l0", "ns_l0", "hcpp", "ns", "sr", "sri"};
+  std::vector<std::string> test_name_vect = {"hcpp_l0", "ns_l0", "hcpp", "ns", "sr", "sri", "hcpp_KCV", "sri_KCV"};
   unsigned int n_test_options = test_name_vect.size();
-  std::vector<bool> smoothing_initialization_vect = {false, false, false, false, false, true};
-  std::vector<bool> smoothing_regression_vect = {false, false, false, false, true, true};
-  std::vector<bool> full_functional_vect = {true, false, true, false, false, false};
-  std::vector<double> lambda_vect = {1e-12, 1e-12, 10, 10, 10, 10};
+  std::vector<bool> smoothing_initialization_vect = {false, false, false, false, false, true, false, true};
+  std::vector<bool> smoothing_regression_vect = {false, false, false, false, true, true, false, true};
+  std::vector<bool> full_functional_vect = {true, false, true, false, false, false, true, false};
+  std::vector<double> lambda_vect = {1e-12, 1e-12, 10, 10, 10, 10, 10, 10};
 
   // error matrices
   DMatrix<double> errors_Y;
@@ -150,33 +143,80 @@ TEST(FPLSR, Test_comparison_Laplacian_GeostatisticalAtNodes)
 
         std::cout << test_name << " ";
 
-        // set smoothing parameter
-        model.setLambdaS(lambda);
+        if (test_name != "sri_KCV" && test_name != "hcpp_KCV")
+        {
 
-        // disable smoothing for initialization and regression
-        model.set_smoothing(smoothing_initialization, smoothing_regression);
+          // define statistical model
+          FPLSR<decltype(problem),
+                SpaceOnly,
+                fdaPDE::models::GeoStatMeshNodes,
+                fdaPDE::models::fixed_lambda>
+              model(problem);
 
-        // full_functional: true -> harold's implementation, false -> correct implementation
-        model.set_full_functional(full_functional);
+          // set smoothing parameter
+          model.setLambdaS(lambda);
 
-        // set model data
-        BlockFrame<double, int> df_data;
-        df_data.insert(OBSERVATIONS_BLK, Y);
-        df_data.insert(DESIGN_MATRIX_BLK, X);
-        model.setData(df_data);
+          // disable smoothing for initialization and regression
+          model.set_smoothing(smoothing_initialization, smoothing_regression);
 
-        // solve smoothing problem
-        model.init();
-        model.solve();
+          // full_functional: true -> harold's implementation, false -> correct implementation
+          model.set_full_functional(full_functional);
 
-        //   **  export computed results  **   //
+          // set model data
+          BlockFrame<double, int> df_data;
+          df_data.insert(OBSERVATIONS_BLK, Y);
+          df_data.insert(DESIGN_MATRIX_BLK, X);
+          model.setData(df_data);
 
-        // estimated quantities
-        Y_hat = model.fitted();
-        B_hat = model.B();
-        X_hat = model.reconstructed_field();
+          // solve smoothing problem
+          model.init();
+          model.solve();
 
-        // compute errors
+          // estimated quantities
+          Y_hat = model.fitted();
+          B_hat = model.B();
+          X_hat = model.reconstructed_field();
+        }
+
+        else
+        {
+
+          // define statistical model
+          FPLSR<decltype(problem),
+                SpaceOnly,
+                fdaPDE::models::GeoStatMeshNodes,
+                fdaPDE::models::kcv_lambda_selection>
+              model(problem);
+
+          // define grid of lambda values
+          std::vector<SVector<1>> lambdas;
+          for (double x = -12.0; x <= 1.0; x += 1)
+            lambdas.push_back(SVector<1>(std::pow(10, x)));
+          model.setLambda(lambdas);
+
+          // disable smoothing for initialization and regression
+          model.set_smoothing(smoothing_initialization, smoothing_regression);
+
+          // full_functional: true -> harold's implementation, false -> correct implementation
+          model.set_full_functional(full_functional);
+
+          // set model data
+          BlockFrame<double, int> df_data;
+          df_data.insert(OBSERVATIONS_BLK, Y);
+          df_data.insert(DESIGN_MATRIX_BLK, X);
+          model.setData(df_data);
+
+          // solve smoothing problem
+          model.init();
+          model.solve();
+
+          // estimated quantities
+          Y_hat = model.fitted();
+          B_hat = model.B();
+          X_hat = model.reconstructed_field();
+        }
+
+        //   **  compute errors  **   //
         errors_Y(j - 1, n_test_options * (i - 1) + t) = (Y_clean - Y_hat).squaredNorm() / batch_size;
         errors_X(j - 1, n_test_options * (i - 1) + t) = (X_clean - X_hat).squaredNorm() / (n_nodes * batch_size);
         errors_B(j - 1, n_test_options * (i - 1) + t) = (B_clean - B_hat).squaredNorm() / n_nodes;
