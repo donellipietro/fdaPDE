@@ -7,7 +7,6 @@
 using fdaPDE::models::SRPDE;
 #include <fdaPDE/core/utils/DataStructures/BlockFrame.h>
 #include <fdaPDE/models/ModelTraits.h>
-using fdaPDE::models::Sampling;
 #include <fdaPDE/core/FEM/PDE.h>
 using fdaPDE::core::FEM::DefaultOperator;
 using fdaPDE::core::FEM::PDE;
@@ -18,11 +17,10 @@ using fdaPDE::core::FEM::SpaceVaryingReaction;
 #include <fdaPDE/core/MESH/Mesh.h>
 using fdaPDE::core::MESH::Mesh;
 #include <fdaPDE/models/SamplingDesign.h>
-using fdaPDE::models::Sampling;
 
 // this file contains the R wrapper for the SRPDE model
 
-template <unsigned int M, unsigned int N, unsigned int R, typename F>
+/*template <unsigned int M, unsigned int N, unsigned int R, typename F>
 class RegularizingPDE {
 private:
   typedef typename std::decay<F>::type BilinearFormType;
@@ -55,8 +53,8 @@ public:
 typedef RegularizingPDE<2,2,1, decltype( std::declval<Laplacian<DefaultOperator>>() )>
 Laplacian_2D_Order1;
 // expose RegularizingPDE as possible argument to other Rcpp modules
-RCPP_EXPOSED_AS  (Laplacian_2D_Order1)
-RCPP_EXPOSED_WRAP(Laplacian_2D_Order1)
+//RCPP_EXPOSED_AS  (Laplacian_2D_Order1)
+//RCPP_EXPOSED_WRAP(Laplacian_2D_Order1)
 
 RCPP_MODULE(Laplacian_2D_Order1) {
   Rcpp::class_<Laplacian_2D_Order1>("Laplacian_2D_Order1")
@@ -118,8 +116,8 @@ public:
 // define 2D costant coefficient PDE regularization.
 typedef RegularizingPDE<2,2,1, ConstantCoefficientsPDE<2>> ConstantCoefficients_2D_Order1;
 // expose RegularizingPDE as possible argument to other Rcpp modules
-RCPP_EXPOSED_AS  (ConstantCoefficients_2D_Order1)
-RCPP_EXPOSED_WRAP(ConstantCoefficients_2D_Order1)
+//RCPP_EXPOSED_AS  (ConstantCoefficients_2D_Order1)
+//RCPP_EXPOSED_WRAP(ConstantCoefficients_2D_Order1)
 
 RCPP_MODULE(ConstantCoefficients_2D_Order1) {
   Rcpp::class_<ConstantCoefficients_2D_Order1>("ConstantCoefficients_2D_Order1")
@@ -189,8 +187,8 @@ public:
 // define 2D costant coefficient PDE regularization.
 typedef RegularizingPDE<2,2,1, SpaceVaryingPDE<2>> SpaceVarying_2D_Order1;
 // expose RegularizingPDE as possible argument to other Rcpp modules
-RCPP_EXPOSED_AS  (SpaceVarying_2D_Order1)
-RCPP_EXPOSED_WRAP(SpaceVarying_2D_Order1)
+//RCPP_EXPOSED_AS  (SpaceVarying_2D_Order1)
+//RCPP_EXPOSED_WRAP(SpaceVarying_2D_Order1)
 
 RCPP_MODULE(SpaceVarying_2D_Order1) {
   Rcpp::class_<SpaceVarying_2D_Order1>("SpaceVarying_2D_Order1")
@@ -204,8 +202,10 @@ RCPP_MODULE(SpaceVarying_2D_Order1) {
     .method("set_PDE_parameters",   &SpaceVarying_2D_Order1::set_PDE_parameters);
 }
 
+*/
+
 // wrapper for SRPDE module
-template <typename RegularizingPDE_, Sampling S_> class R_SRPDE;
+template <typename RegularizingPDE_, typename S_> class R_SRPDE;
 
 // macro for the definition of common functionalities to all SRPDE Rcpp modules
 #define SRPDE_MODULE(REGULARIZATION_TYPE, SAMPLING_TYPE, ... )                 \
@@ -246,6 +246,23 @@ template <typename RegularizingPDE_, Sampling S_> class R_SRPDE;
     __VA_ARGS__								       \
   };
 
+// PDE_* pde;
+
+// pde = new PDE<2,2,1, Laplacian, DMatrix<double>>();
+// pde->init();
+// pde->solve();
+
+// model_ptr model;
+// model = new SRPDE< PDE<2,2,1, Laplacian, DMatrix<double>>, GeoStatMesh >( static_cast< PDE<2,2,1, Laplacian, DMatrix<double>> >(&pde) );
+
+// model->setData();
+// model->set_spatial_locations();
+
+// model->init();
+// model->solve();
+
+
+/*
 // Laplacian regularization, sampling at mesh nodes
 SRPDE_MODULE(Laplacian_2D_Order1, Sampling::GeoStatMeshNodes); 
 // definition of Rcpp module
@@ -266,9 +283,9 @@ RCPP_MODULE(SRPDE_Laplacian_2D_GeoStatNodes) {
 }
 
 // Laplacian regularization, sampling at given locations
-SRPDE_MODULE(Laplacian_2D_Order1, Sampling::GeoStatLocations,
-	     void set_locations(const DMatrix<double>& data) { model_.setLocs(data); }
-	     )
+SRPDE_MODULE(Laplacian_2D_Order1, Sampling::GeoStatLocations);//,
+//	     void set_locations(const DMatrix<double>& data) { model_.setLocations(data); }
+// )
 // definition of Rcpp module
 typedef R_SRPDE<Laplacian_2D_Order1, Sampling::GeoStatLocations>
 SRPDE_Laplacian_2D_GeoStatLocations;
@@ -282,7 +299,7 @@ RCPP_MODULE(SRPDE_Laplacian_2D_GeoStatLocations) {
     .method("set_lambda_s",     &SRPDE_Laplacian_2D_GeoStatLocations::set_lambda_s)
     .method("set_observations", &SRPDE_Laplacian_2D_GeoStatLocations::set_observations)
     .method("set_covariates",   &SRPDE_Laplacian_2D_GeoStatLocations::set_covariates)
-    .method("set_locations",    &SRPDE_Laplacian_2D_GeoStatLocations::set_locations)
+    //.method("set_locations",    &SRPDE_Laplacian_2D_GeoStatLocations::set_locations)
     // solve method
     .method("solve",            &SRPDE_Laplacian_2D_GeoStatLocations::solve);
 }
@@ -329,9 +346,9 @@ RCPP_MODULE(SRPDE_ConstantCoefficients_2D_GeoStatNodes) {
 }
 
 // Constant Coefficients PDE regularization, sampling at given locations
-SRPDE_MODULE(ConstantCoefficients_2D_Order1, Sampling::GeoStatLocations,
-	     void set_locations(const DMatrix<double>& data) { model_.setLocs(data); }
-	     )
+SRPDE_MODULE(ConstantCoefficients_2D_Order1, Sampling::GeoStatLocations);//,
+//void set_locations(const DMatrix<double>& data) { model_.setLocations(data); }
+//	     )
 // definition of Rcpp module
 typedef R_SRPDE<ConstantCoefficients_2D_Order1, Sampling::GeoStatLocations>
 SRPDE_ConstantCoefficients_2D_GeoStatLocations;
@@ -345,7 +362,7 @@ RCPP_MODULE(SRPDE_ConstantCoefficients_2D_GeoStatLocations) {
     .method("set_lambda_s",     &SRPDE_ConstantCoefficients_2D_GeoStatLocations::set_lambda_s)
     .method("set_observations", &SRPDE_ConstantCoefficients_2D_GeoStatLocations::set_observations)
     .method("set_covariates",   &SRPDE_ConstantCoefficients_2D_GeoStatLocations::set_covariates)
-    .method("set_locations",    &SRPDE_ConstantCoefficients_2D_GeoStatLocations::set_locations)
+    //.method("set_locations",    &SRPDE_ConstantCoefficients_2D_GeoStatLocations::set_locations)
     // solve method
     .method("solve",            &SRPDE_ConstantCoefficients_2D_GeoStatLocations::solve);
 }
@@ -392,9 +409,9 @@ RCPP_MODULE(SRPDE_SpaceVarying_2D_GeoStatNodes) {
 }
 
 // Space Varying PDE regularization, sampling at given locations
-SRPDE_MODULE(SpaceVarying_2D_Order1, Sampling::GeoStatLocations,
-	     void set_locations(const DMatrix<double>& data) { model_.setLocs(data); }
-	     )
+SRPDE_MODULE(SpaceVarying_2D_Order1, Sampling::GeoStatLocations);//,
+	     //void set_locations(const DMatrix<double>& data) { model_.setLocations(data); }
+	     //)
 // definition of Rcpp module
 typedef R_SRPDE<SpaceVarying_2D_Order1, Sampling::GeoStatLocations>
 SRPDE_SpaceVarying_2D_GeoStatLocations;
@@ -408,7 +425,7 @@ RCPP_MODULE(SRPDE_SpaceVarying_2D_GeoStatLocations) {
     .method("set_lambda_s",     &SRPDE_SpaceVarying_2D_GeoStatLocations::set_lambda_s)
     .method("set_observations", &SRPDE_SpaceVarying_2D_GeoStatLocations::set_observations)
     .method("set_covariates",   &SRPDE_SpaceVarying_2D_GeoStatLocations::set_covariates)
-    .method("set_locations",    &SRPDE_SpaceVarying_2D_GeoStatLocations::set_locations)
+    //.method("set_locations",    &SRPDE_SpaceVarying_2D_GeoStatLocations::set_locations)
     // solve method
     .method("solve",            &SRPDE_SpaceVarying_2D_GeoStatLocations::solve);
 }
@@ -434,3 +451,4 @@ RCPP_MODULE(SRPDE_SpaceVarying_2D_Areal) {
     // solve method
     .method("solve",            &SRPDE_SpaceVarying_2D_Areal::solve);
 }
+*/
