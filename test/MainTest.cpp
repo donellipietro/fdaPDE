@@ -3,7 +3,7 @@
 #include <Eigen/Dense>
 #include <Eigen/Sparse>
 
-/*// fields test suites
+// fields test suites
 #include "core/ScalarFieldTest.cpp"
 #include "core/VectorFieldTest.cpp"
 // MESH test suites
@@ -23,8 +23,8 @@
 #include "models/SpaceTimeTest.cpp"
 // models test suites
 #include "models/SRPDETest.cpp"
-#include "models/STRPDETest.cpp"
-#include "models/GSRPDETest.cpp"*/
+// #include "models/STRPDETest.cpp"
+// #include "models/GSRPDETest.cpp"
 #include "models/FPCATest.cpp"
 #include "models/FPCACSTest.cpp"
 // GCV test suites
