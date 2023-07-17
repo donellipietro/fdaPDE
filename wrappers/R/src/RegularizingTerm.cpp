@@ -2,7 +2,7 @@
 #include <RcppEigen.h>
 // [[Rcpp::depends(RcppEigen)]]
 
-#include <fdaPDE/core/utils/Symbols.h>
+#include <fdaPDE/core/utils/Symbols.h> 
 #include <fdaPDE/models/regression/SRPDE.h>
 using fdaPDE::models::SRPDE;
 #include <fdaPDE/core/utils/DataStructures/BlockFrame.h>
