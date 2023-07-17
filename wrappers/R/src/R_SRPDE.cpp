@@ -1,5 +1,5 @@
 // we only include RcppEigen.h which pulls Rcpp.h in for us
-#include <RcppEigen.h>
+#include <RcppEigen.h> 
 // [[Rcpp::depends(RcppEigen)]]
 
 #include <fdaPDE/core/utils/Symbols.h>
