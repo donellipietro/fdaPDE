@@ -24,7 +24,11 @@ using fdaPDE::testing::almost_equal;
 #include <string>
 #include <fstream>
 #include <filesystem>
-const static Eigen::IOFormat CSVFormat(Eigen::StreamPrecision, Eigen::DontAlignCols, ",", "\n");
+
+namespace Test_fSRPDE
+{
+    const static Eigen::IOFormat CSVFormat(Eigen::StreamPrecision, Eigen::DontAlignCols, ",", "\n");
+}
 
 /* test 1
    domain:       unit square [0,1] x [0,1]
@@ -81,7 +85,7 @@ TEST(FSRPDE, Test1_Laplacian_NonParametric_GeostatisticalAtNodes)
     std::ofstream nodesfile;
     nodesfile.open(results_directory + "f.csv");
     DMatrix<double> computedF = model.f();
-    nodesfile << computedF.format(CSVFormat);
+    nodesfile << computedF.format(Test_fSRPDE::CSVFormat);
     nodesfile.close();
 }
 
@@ -145,7 +149,7 @@ TEST(FSRPDE, Test2_Laplacian_SemiParametric_GeostatisticalAtLocations)
     std::ofstream nodesfile;
     nodesfile.open(results_directory + "f.csv");
     DMatrix<double> computedF = model.f();
-    nodesfile << computedF.format(CSVFormat);
+    nodesfile << computedF.format(Test_fSRPDE::CSVFormat);
     nodesfile.close();
 }
 
@@ -209,7 +213,7 @@ TEST(FSRPDE, Test3_Laplacian_SemiParametric_GeostatisticalAtLocations_less)
     std::ofstream nodesfile;
     nodesfile.open(results_directory + "f.csv");
     DMatrix<double> computedF = model.f();
-    nodesfile << computedF.format(CSVFormat);
+    nodesfile << computedF.format(Test_fSRPDE::CSVFormat);
     nodesfile.close();
 }
 
@@ -273,7 +277,7 @@ TEST(FSRPDE, Test4_Laplacian_SemiParametric_GeostatisticalAtLocations_sub)
     std::ofstream nodesfile;
     nodesfile.open(results_directory + "f.csv");
     DMatrix<double> computedF = model.f();
-    nodesfile << computedF.format(CSVFormat);
+    nodesfile << computedF.format(Test_fSRPDE::CSVFormat);
     nodesfile.close();
 }
 

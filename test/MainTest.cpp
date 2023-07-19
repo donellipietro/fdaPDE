@@ -26,15 +26,17 @@
 // #include "models/STRPDETest.cpp"
 // #include "models/GSRPDETest.cpp"
 #include "models/FPCATest.cpp"
+#include "models/FSRPDETest.cpp"
+#include "models/FPLSRTest.cpp"
 // GCV test suites
 // #include "calibration/GCVTest.cpp"
 // #include "calibration/GCVNewtonTest.cpp"
+>>>>>>>>> Temporary merge branch 2
 
-int main(int argc, char **argv)
+    int
+    main(int argc, char **argv)
 {
-  int main(int argc, char **argv)
-  {
-    // start testing
-    testing::InitGoogleTest(&argc, argv);
-    return RUN_ALL_TESTS();
-  }
+  // start testing
+  testing::InitGoogleTest(&argc, argv);
+  return RUN_ALL_TESTS();
+}
