@@ -1,40 +1,20 @@
 ## load all required modules
 
-## regularizing PDES
+# regularizing PDEs
 loadModule("Laplacian_2D_Order1", TRUE)
 loadModule("Laplacian_3D_Order1", TRUE)
 loadModule("Laplacian_3D_Order1", TRUE)
 loadModule("ConstantCoefficients_2D_Order1", TRUE)
 loadModule("SpaceVarying_2D_Order1", TRUE)
 
-## SRPDE
-# # loadModule("SRPDE_Laplacian_2D_GeoStatNodes", TRUE)
-# # loadModule("SRPDE_Laplacian_2D_GeoStatLocations", TRUE)
-# # loadModule("SRPDE_Laplacian_2D_Areal", TRUE)
-# # loadModule("SRPDE_ConstantCoefficients_2D_GeoStatNodes", TRUE)
-# # loadModule("SRPDE_ConstantCoefficients_2D_GeoStatLocations", TRUE)
-# # loadModule("SRPDE_ConstantCoefficients_2D_Areal", TRUE)
-# # loadModule("SRPDE_SpaceVarying_2D_GeoStatNodes", TRUE)
-# # loadModule("SRPDE_SpaceVarying_2D_GeoStatLocations", TRUE)
-# # loadModule("SRPDE_SpaceVarying_2D_Areal", TRUE)
-loadModule("FPCA_Laplacian_2D_GeoStatNodes", TRUE)
-loadModule("FPCA_Laplacian_2D_GeoStatLocations", TRUE)
-loadModule("FPCA_Laplacian_3D_GeoStatNodes", TRUE)
-# loadModule("STRPDE_Laplacian_2D_GeoStatNodes", TRUE)
-# loadModule("STRPDE_Laplacian_2D_GeoStatLocations", TRUE)
-# loadModule("GapFill_Laplacian_2D_GeoStatNodes", TRUE)
-# loadModule("GapFill_Laplacian_2D_GeoStatLocations", TRUE)
-loadModule("FSRPDE_Laplacian_2D_GeoStatNodes", TRUE)
-loadModule("FSRPDE_Laplacian_2D_GeoStatLocations", TRUE)
+# fPCA
 loadModule("FPCA_Laplacian_2D_GeoStatNodes", TRUE)
 loadModule("FPCA_Laplacian_2D_GeoStatLocations", TRUE)
 loadModule("FPCA_Laplacian_3D_GeoStatNodes", TRUE)
 loadModule("FPCA_CS_Laplacian_2D_GeoStatNodes", TRUE)
 loadModule("FPCA_CS_Laplacian_2D_GeoStatLocations", TRUE)
 loadModule("FPCA_CS_Laplacian_3D_GeoStatNodes", TRUE)
-# loadModule("STRPDE_Laplacian_2D_GeoStatNodes", TRUE)
-# loadModule("STRPDE_Laplacian_2D_GeoStatLocations", TRUE)
-# loadModule("GapFill_Laplacian_2D_GeoStatNodes", TRUE)
-# loadModule("GapFill_Laplacian_2D_GeoStatLocations", TRUE)
-# loadModule("FSRPDE_Laplacian_2D_GeoStatNodes", TRUE)
-# loadModule("FSRPDE_Laplacian_2D_GeoStatLocations", TRUE)
+
+# fSRPDE
+loadModule("FSRPDE_Laplacian_2D_GeoStatNodes", TRUE)
+loadModule("FSRPDE_Laplacian_2D_GeoStatLocations", TRUE)

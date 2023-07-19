@@ -31,7 +31,7 @@ RCPP_EXPOSED_WRAP(ConstantCoefficients_2D_Order1)
 RCPP_EXPOSED_AS(SpaceVarying_2D_Order1)
 RCPP_EXPOSED_WRAP(SpaceVarying_2D_Order1)
 
-// wrapper for SRPDE module
+// wrapper for fPCA module
 template <typename RegularizingPDE, typename S>
 class R_FPCA
 {
@@ -43,6 +43,7 @@ protected:
   BlockFrame<double, int> df_;
 
 public:
+  // Constructor
   R_FPCA(const RegularizingPDE_ &regularization)
       : regularization_(regularization)
   {
@@ -58,6 +59,12 @@ public:
     model_.init_regularization();
     model_.init_sampling();
   }
+
+  // Getters
+  DMatrix<double> loadings() const { return model_.loadings(); }
+  DMatrix<double> scores() const { return model_.scores(); }
+  SpMatrix<double> R0() const { return model_.R0(); }
+  SpMatrix<double> Psi() { return model_.Psi(not_nan()); }
 
   // Setters
   void set_npc(std::size_t n) { model_.set_npc(n); }
@@ -78,13 +85,6 @@ public:
     model_.set_spatial_locations(data);
   }
 
-  // Getters
-  DMatrix<double> loadings() const { return model_.loadings(); }
-  DMatrix<double> scores() const { return model_.scores(); }
-
-  SpMatrix<double> R0() const { return model_.R0(); }
-  SpMatrix<double> Psi() { return model_.Psi(not_nan()); }
-
   // Solve method
   void solve()
   {
@@ -103,19 +103,21 @@ RCPP_MODULE(FPCA_Laplacian_2D_GeoStatNodes)
 {
   Rcpp::class_<FPCA_Laplacian_2D_GeoStatNodes>("FPCA_Laplacian_2D_GeoStatNodes")
       .constructor<Laplacian_2D_Order1>()
-      // getters
+      // Initializations
+      .method("init", &FPCA_Laplacian_2D_GeoStatNodes::init)
+      .method("init_regularization", &FPCA_Laplacian_2D_GeoStatNodes::init_regularization)
+      .method("init_pde", &FPCA_Laplacian_2D_GeoStatNodes::init_pde)
+      // Getters
       .method("loadings", &FPCA_Laplacian_2D_GeoStatNodes::loadings)
       .method("scores", &FPCA_Laplacian_2D_GeoStatNodes::scores)
-      // setters
+      .method("R0", &FPCA_Laplacian_2D_GeoStatNodes::R0)
+      .method("Psi", &FPCA_Laplacian_2D_GeoStatNodes::Psi)
+      // Setters
       .method("set_lambda_s", &FPCA_Laplacian_2D_GeoStatNodes::set_lambda_s)
       .method("set_lambdas", &FPCA_Laplacian_2D_GeoStatNodes::set_lambdas)
       .method("set_npc", &FPCA_Laplacian_2D_GeoStatNodes::set_npc)
       .method("set_observations", &FPCA_Laplacian_2D_GeoStatNodes::set_observations)
-      .method("R0", &FPCA_Laplacian_2D_GeoStatNodes::R0)
-      .method("init", &FPCA_Laplacian_2D_GeoStatNodes::init)
-      .method("init_regularization", &FPCA_Laplacian_2D_GeoStatNodes::init_regularization)
-      .method("init_pde", &FPCA_Laplacian_2D_GeoStatNodes::init_pde)
-      .method("Psi", &FPCA_Laplacian_2D_GeoStatNodes::Psi)
+      // Solve method
       .method("solve", &FPCA_Laplacian_2D_GeoStatNodes::solve);
 }
 
@@ -125,20 +127,22 @@ RCPP_MODULE(FPCA_Laplacian_2D_GeoStatLocations)
 {
   Rcpp::class_<FPCA_Laplacian_2D_GeoStatLocations>("FPCA_Laplacian_2D_GeoStatLocations")
       .constructor<Laplacian_2D_Order1>()
-      // getters
+      // Initializations
+      .method("init_regularization", &FPCA_Laplacian_2D_GeoStatLocations::init_regularization)
+      .method("init_pde", &FPCA_Laplacian_2D_GeoStatLocations::init_pde)
+      .method("init", &FPCA_Laplacian_2D_GeoStatLocations::init)
+      // Getters
       .method("loadings", &FPCA_Laplacian_2D_GeoStatLocations::loadings)
       .method("scores", &FPCA_Laplacian_2D_GeoStatLocations::scores)
-      // setters
+      .method("R0", &FPCA_Laplacian_2D_GeoStatLocations::R0)
+      .method("Psi", &FPCA_Laplacian_2D_GeoStatLocations::Psi)
+      // Setters
       .method("set_lambda_s", &FPCA_Laplacian_2D_GeoStatLocations::set_lambda_s)
       .method("set_lambdas", &FPCA_Laplacian_2D_GeoStatLocations::set_lambdas)
       .method("set_npc", &FPCA_Laplacian_2D_GeoStatLocations::set_npc)
       .method("set_locations", &FPCA_Laplacian_2D_GeoStatLocations::set_locations)
       .method("set_observations", &FPCA_Laplacian_2D_GeoStatLocations::set_observations)
-      .method("R0", &FPCA_Laplacian_2D_GeoStatLocations::R0)
-      .method("init_regularization", &FPCA_Laplacian_2D_GeoStatLocations::init_regularization)
-      .method("init_pde", &FPCA_Laplacian_2D_GeoStatLocations::init_pde)
-      .method("init", &FPCA_Laplacian_2D_GeoStatLocations::init)
-      .method("Psi", &FPCA_Laplacian_2D_GeoStatLocations::Psi)
+      // Solve method
       .method("solve", &FPCA_Laplacian_2D_GeoStatLocations::solve);
 }
 
@@ -148,15 +152,16 @@ RCPP_MODULE(FPCA_Laplacian_3D_GeoStatNodes)
 {
   Rcpp::class_<FPCA_Laplacian_3D_GeoStatNodes>("FPCA_Laplacian_3D_GeoStatNodes")
       .constructor<Laplacian_3D_Order1>()
-      // getters
-      .method("loadings", &FPCA_Laplacian_3D_GeoStatNodes::loadings)
-      .method("scores", &FPCA_Laplacian_3D_GeoStatNodes::scores)
-      // setters
-      .method("set_lambda_s", &FPCA_Laplacian_3D_GeoStatNodes::set_lambda_s)
-      .method("set_observations", &FPCA_Laplacian_3D_GeoStatNodes::set_observations)
+      // Initializations
       .method("init_regularization", &FPCA_Laplacian_3D_GeoStatNodes::init_regularization)
       .method("init_pde", &FPCA_Laplacian_3D_GeoStatNodes::init_pde)
+      // Getters
+      .method("loadings", &FPCA_Laplacian_3D_GeoStatNodes::loadings)
+      .method("scores", &FPCA_Laplacian_3D_GeoStatNodes::scores)
       .method("R0", &FPCA_Laplacian_3D_GeoStatNodes::R0)
-      // solve method
+      // Setters
+      .method("set_lambda_s", &FPCA_Laplacian_3D_GeoStatNodes::set_lambda_s)
+      .method("set_observations", &FPCA_Laplacian_3D_GeoStatNodes::set_observations)
+      // Solve method
       .method("solve", &FPCA_Laplacian_3D_GeoStatNodes::solve);
 }
