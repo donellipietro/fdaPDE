@@ -7,22 +7,26 @@ void FPCA_CS<PDE, RegularizationType, SamplingDesign, lambda_selection_strategy>
     DMatrix<double> X = data().template get<double>(OBSERVATIONS_BLK);
 
     // Penalty matrix
-    PsiTPsi_ = PsiTD(not_nan()) * Psi(not_nan());
-    invPsiTPsi_.compute(PsiTPsi_);
-
-    // std::cout << "Mass lumping" << std::endl;
-    // unsigned int K = n_basis();
-    // invR0_.resize(K, K);
-    // invR0_.reserve(K);
-    // for (std::size_t i = 0; i < this->K; ++i)
-    // {
-    //     invR0_.insert(i, i) = 1 / R0().row(i).sum();
-    // }
-    // invR0_.makeCompressed();
-
-    // std::cout << "P" << std::endl;
-    invR0_.compute(R0());
-    P_ = R1() * invR0_.solve(R1());
+    // std::cout << "Penalty matrix" << std::endl;
+    if (mass_lumping_)
+    {
+        unsigned int K = n_basis();
+        SpMatrix<double> invR0_;
+        invR0_.resize(K, K);
+        invR0_.reserve(K);
+        for (std::size_t i = 0; i < K; ++i)
+        {
+            invR0_.insert(i, i) = 1 / R0().col(i).sum();
+        }
+        invR0_.makeCompressed();
+        P_ = R1() * invR0_ * R1();
+    }
+    else
+    {
+        fdaPDE::SparseLU<SpMatrix<double>> invR0_;
+        invR0_.compute(R0());
+        P_ = R1() * invR0_.solve(R1());
+    }
 
     // Resolution
     // std::cout << "RSVD" << std::endl;
@@ -45,14 +49,21 @@ void FPCA_CS<PDE, RegularizationType, SamplingDesign, lambda_selection_strategy>
     // }
 
     rsvd.solve();
-    loadings_ = rsvd.loadings().transpose();
+
+    // std::cout << "Loadings" << std::endl;
+    loadings_ = Psi(not_nan()) * (rsvd.loadings()).transpose();
+    // std::cout << "Scores" << std::endl;
     scores_ = rsvd.scores();
 
+    // std::cout << "Normalization" << std::endl;
     for (std::size_t i = 0; i < n_pc_; i++)
     {
-        // find vectors s,f minimizing \norm_F{Y - s^T*f}^2 + (s^T*s)*P(f) fixed \lambda
-
-        double f_n_norm = std::sqrt(loadings_.col(i).dot(R0() * loadings_.col(i)));
+        double f_n_norm;
+        if constexpr (is_space_only<decltype(*this)>::value)
+            f_n_norm = std::sqrt(loadings_.col(i).dot(R0() * loadings_.col(i)));
+        else
+            f_n_norm = loadings_.col(i).norm();
+        // std::cout << f_n_norm << std::endl;
         loadings_.col(i) /= f_n_norm;
         scores_.col(i) *= f_n_norm;
     }

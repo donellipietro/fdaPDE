@@ -16,8 +16,9 @@ Rcpp::Rostream<false>& Rcpp::Rcerr = Rcpp::Rcpp_cerr_get();
 RcppExport SEXP _rcpp_module_boot_FPCA_Laplacian_2D_GeoStatNodes();
 RcppExport SEXP _rcpp_module_boot_FPCA_Laplacian_2D_GeoStatLocations();
 RcppExport SEXP _rcpp_module_boot_FPCA_Laplacian_3D_GeoStatNodes();
-RcppExport SEXP _rcpp_module_boot_FSRPDE_Laplacian_2D_GeoStatNodes();
-RcppExport SEXP _rcpp_module_boot_FSRPDE_Laplacian_2D_GeoStatLocations();
+RcppExport SEXP _rcpp_module_boot_FPCA_CS_Laplacian_2D_GeoStatNodes();
+RcppExport SEXP _rcpp_module_boot_FPCA_CS_Laplacian_2D_GeoStatLocations();
+RcppExport SEXP _rcpp_module_boot_FPCA_CS_Laplacian_3D_GeoStatNodes();
 RcppExport SEXP _rcpp_module_boot_Laplacian_2D_Order1();
 RcppExport SEXP _rcpp_module_boot_ConstantCoefficients_2D_Order1();
 RcppExport SEXP _rcpp_module_boot_SpaceVarying_2D_Order1();
@@ -27,8 +28,9 @@ static const R_CallMethodDef CallEntries[] = {
     {"_rcpp_module_boot_FPCA_Laplacian_2D_GeoStatNodes", (DL_FUNC) &_rcpp_module_boot_FPCA_Laplacian_2D_GeoStatNodes, 0},
     {"_rcpp_module_boot_FPCA_Laplacian_2D_GeoStatLocations", (DL_FUNC) &_rcpp_module_boot_FPCA_Laplacian_2D_GeoStatLocations, 0},
     {"_rcpp_module_boot_FPCA_Laplacian_3D_GeoStatNodes", (DL_FUNC) &_rcpp_module_boot_FPCA_Laplacian_3D_GeoStatNodes, 0},
-    {"_rcpp_module_boot_FSRPDE_Laplacian_2D_GeoStatNodes", (DL_FUNC) &_rcpp_module_boot_FSRPDE_Laplacian_2D_GeoStatNodes, 0},
-    {"_rcpp_module_boot_FSRPDE_Laplacian_2D_GeoStatLocations", (DL_FUNC) &_rcpp_module_boot_FSRPDE_Laplacian_2D_GeoStatLocations, 0},
+    {"_rcpp_module_boot_FPCA_CS_Laplacian_2D_GeoStatNodes", (DL_FUNC) &_rcpp_module_boot_FPCA_CS_Laplacian_2D_GeoStatNodes, 0},
+    {"_rcpp_module_boot_FPCA_CS_Laplacian_2D_GeoStatLocations", (DL_FUNC) &_rcpp_module_boot_FPCA_CS_Laplacian_2D_GeoStatLocations, 0},
+    {"_rcpp_module_boot_FPCA_CS_Laplacian_3D_GeoStatNodes", (DL_FUNC) &_rcpp_module_boot_FPCA_CS_Laplacian_3D_GeoStatNodes, 0},
     {"_rcpp_module_boot_Laplacian_2D_Order1", (DL_FUNC) &_rcpp_module_boot_Laplacian_2D_Order1, 0},
     {"_rcpp_module_boot_ConstantCoefficients_2D_Order1", (DL_FUNC) &_rcpp_module_boot_ConstantCoefficients_2D_Order1, 0},
     {"_rcpp_module_boot_SpaceVarying_2D_Order1", (DL_FUNC) &_rcpp_module_boot_SpaceVarying_2D_Order1, 0},

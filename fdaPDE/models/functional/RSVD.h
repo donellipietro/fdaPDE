@@ -7,72 +7,63 @@ class RSVD
 {
 public:
     // Data
-    DMatrix<double> X_;
-    double lambda_;
-    SpMatrix<double> Psi_;
-    SpMatrix<double> P_;
-    unsigned int rank_;
+    const DMatrix<double> &X_;
+    const double &lambda_;
+    const SpMatrix<double> &Psi_;
+    const SpMatrix<double> &P_;
+    const unsigned int &rank_;
 
     // Intermediate steps matrices
     DMatrix<double> C_;
     DMatrix<double> D_;
 
     // Solutions
-    DMatrix<double> W_;
     DMatrix<double> H_;
+    DMatrix<double> W_;
 
-    // Constructors
-    // RSVD(DMatrix<double> X, double lambda, unsigned int rank)
-    //     : X_(X), lambda_(lambda), rank_(rank)
-    // {
-    //     Psi_ = DMatrix<double>::Identity(X_.cols(), X_.cols());
-    //     P_ = DMatrix<double>::Zero(X_.cols(), X_.cols());
-    // };
-    // RSVD(DMatrix<double> X, double lambda, unsigned int rank, SpMatrix<double> P)
-    //     : X_(X), lambda_(lambda), rank_(rank), P_(P)
-    // {
-    //     if (X_.cols() == P_.rows())
-    //     {
-    //         Psi_ = DMatrix<double>::Identity(X_.cols(), X_.cols());
-    //     }
-    //     else
-    //     {
-    //         throw std::runtime_error("Error: Dimensions are wrong.");
-    //     }
-    // };
-    RSVD(DMatrix<double> X, double lambda, unsigned int rank, SpMatrix<double> Psi, SpMatrix<double> P)
-        : X_(X), lambda_(lambda), rank_(rank), Psi_(Psi), P_(P){};
+    // Constructor
+    RSVD(const DMatrix<double> &X, const double &lambda, const unsigned int &rank, const SpMatrix<double> &Psi, const SpMatrix<double> &P)
+        : X_(X), lambda_(lambda), rank_(rank), Psi_(Psi), P_(P)
+    {
+        H_.resize(X_.rows(), rank_);
+        W_.resize(rank_, X_.cols());
+    };
 
     // Methods
     void solve()
     {
         // std::cout << "solve" << std::endl;
+        std::size_t K = P_.rows();
 
         // std::cout << "C" << std::endl;
         C_ = Psi_.transpose() * Psi_ + lambda_ * P_;
+        // std::cout << C_.block(0,0,5,5) << std::endl;
+        // std::cout << std::endl;
 
         // std::cout << "Cholesky" << std::endl;
         Eigen::LLT<DMatrix<double>> cholesky(C_);
         D_ = cholesky.matrixL();
+        // std::cout << D_.block(0,0,5,5) << std::endl;
+        // std::cout << std::endl;
 
-        Eigen::PartialPivLU<DMatrix<double>> invD_;
-        invD_.compute(D_);
+        Eigen::PartialPivLU<DMatrix<double>> invD;
+        invD.compute(D_);
 
         // std::cout << "SVD" << std::endl;
-        Eigen::JacobiSVD<DMatrix<double>> svd(X_ * Psi_ * invD_.solve(DMatrix<double>::Identity(P_.rows(), P_.cols())), Eigen::ComputeThinU | Eigen::ComputeThinV);
+        Eigen::JacobiSVD<DMatrix<double>> svd(X_ * Psi_ * (invD.solve(DMatrix<double>::Identity(K, K))).transpose(), Eigen::ComputeThinU | Eigen::ComputeThinV);
 
-        // std::cout << "Results" << std::endl;
+        // std::cout << "Results, H" << std::endl;
         H_ = svd.matrixU().leftCols(rank_);
+        // std::cout << H_.topRows(5) << std::endl;
+        // std::cout << std::endl;
+
+        // std::cout << "Results, W" << std::endl;
         W_ = H_.transpose() * X_ * Psi_ * cholesky.solve(DMatrix<double>::Identity(P_.rows(), P_.cols()));
+        // std::cout << W_.leftCols(5) << std::endl;
+        // std::cout << std::endl;
 
         // std::cout << "solve" << std::endl;
     }
-
-    // Setters
-    void set_data(DMatrix<double> &X) { X_ = X; }
-    void set_lambda(double lambda) { lambda_ = lambda; }
-    void set_rank(unsigned int rank) { rank_ = rank; }
-    void set_P(SpMatrix<double> &P) { P_ = P; }
 
     // Getters
     DMatrix<double> scores() const { return H_; }

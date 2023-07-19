@@ -18,6 +18,10 @@ namespace fdaPDE
     namespace models
     {
 
+        struct fixed_lambda {};
+        struct gcv_lambda_selection {};
+        struct kcv_lambda_selection {};
+
         // base class for any FPCA_CS model
         template <typename PDE, typename RegularizationType, typename SamplingDesign, typename lambda_selection_strategy>
         class FPCA_CS : public FunctionalBase<FPCA_CS<PDE, RegularizationType, SamplingDesign, lambda_selection_strategy>>
@@ -32,12 +36,14 @@ namespace fdaPDE
             // Intermediate steps matrices
             SpMatrix<double> PsiTPsi_{};
             fdaPDE::SparseLU<SpMatrix<double>> invPsiTPsi_;
-            fdaPDE::SparseLU<SpMatrix<double>> invR0_;
             SpMatrix<double> P_{};
 
             // problem solution
             DMatrix<double> loadings_;
             DMatrix<double> scores_;
+
+            // Options
+            bool mass_lumping_ = false;
 
             // tag dispatched private methods for computation of PCs, ** to be removed **
             void solve_(fixed_lambda);
@@ -70,6 +76,7 @@ namespace fdaPDE
 
             // setters
             void set_npc(std::size_t n_pc) { n_pc_ = n_pc; }
+            void set_mass_lumping(bool mass_lumping) { mass_lumping_ = mass_lumping; }
         };
         template <typename PDE_, typename SamplingDesign_, typename lambda_selection_strategy>
         struct model_traits<FPCA_CS<PDE_, fdaPDE::models::SpaceOnly, SamplingDesign_, lambda_selection_strategy>>
