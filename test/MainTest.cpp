@@ -23,8 +23,8 @@
 #include "models/SpaceTimeTest.cpp"
 // models test suites
 #include "models/SRPDETest.cpp"
-// #include "models/STRPDETest.cpp"
-// #include "models/GSRPDETest.cpp"
+#include "models/STRPDETest.cpp"
+#include "models/GSRPDETest.cpp"
 #include "models/FPCATest.cpp"
 #include "models/FPCACSTest.cpp"
 #include "models/FSRPDETest.cpp"

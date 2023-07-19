@@ -24,7 +24,7 @@ namespace fdaPDE
     };
 
     // tag to request the not-NaN corrected version of matrix \Psi
-    struct not_nan_corrected
+    struct not_nan
     {
     };
 
@@ -35,34 +35,7 @@ namespace fdaPDE
     protected:
       DEFINE_CRTP_MODEL_UTILS; // import model() method (const and non-const access)
       SpMatrix<double> Psi_;   // n x N matrix \Psi = [\psi_{ij}] = \psi_j(p_i) of spatial basis evaluation at data locations p_i
-      SpMatrix<double> B_;     // matrix \Psi where rows corresponding to NaN observations are zeroed
     public:
-      // assemble matrix B (sets all rows of \Psi corresponding to NaN observations to zero)
-      void set_nan()
-      {
-        if (model().has_nan())
-        {
-          // reserve space
-          B_.resize(Psi_.rows(), Psi_.cols());
-          // triplet list to fill sparse matrix
-          std::vector<fdaPDE::Triplet<double>> tripletList;
-          tripletList.reserve(Psi_.rows() * Psi_.cols());
-          for (int k = 0; k < Psi_.outerSize(); ++k)
-            for (SpMatrix<double>::InnerIterator it(Psi_, k); it; ++it)
-            {
-              if (model().nan_idxs().find(it.row()) == model().nan_idxs().end())
-              {
-                // no missing data at this location
-                tripletList.emplace_back(it.row(), it.col(), it.value());
-              }
-            }
-          // finalize construction
-          B_.setFromTriplets(tripletList.begin(), tripletList.end());
-          B_.makeCompressed();
-        }
-        return;
-      }
-
       // if the model is space-time, perform a proper tensorization of matrix \Psi
       void tensorize()
       {
@@ -77,11 +50,10 @@ namespace fdaPDE
             Psi_ = Kronecker(Im, Psi_);
           }
         }
-        return;
       }
-
-      // getters to not-corrected \Psi matrix
-      const SpMatrix<double> &Psi(not_nan_corrected) const { return Psi_; }
+      // getters to not NaN corrected \Psi and \Psi^T*D matrices (\Psi^T*D redefined for Areal sampling)
+      const SpMatrix<double> &Psi(not_nan) const { return Psi_; }
+      auto PsiTD(not_nan) const { return Psi_.transpose(); }
     };
 
     // data sampled at mesh nodes
@@ -91,9 +63,7 @@ namespace fdaPDE
     private:
       DEFINE_CRTP_MODEL_UTILS; // import model() method (const and non-const access)
       typedef SamplingBase<Model> Base;
-      using Base::B_;
       using Base::Psi_;
-      using Base::set_nan;   // zero rows of \Psi matrix depending on missingness-pattern
       using Base::tensorize; // tensorize matrix \Psi for space-time problems
     public:
       // constructor
@@ -120,14 +90,11 @@ namespace fdaPDE
         Psi_.setFromTriplets(tripletList.begin(), tripletList.end());
         Psi_.makeCompressed();
         tensorize(); // tensorize \Psi for space-time problems
-        set_nan();   // correct for missing observations
       }
 
       // getters
-      using Base::Psi; // getter to not nan-corrected \Psi
-      const SpMatrix<double> &Psi() const { return model().has_nan() ? B_ : Psi_; }
-      auto PsiTD() const { return model().has_nan() ? B_.transpose() : Psi_.transpose(); }
       std::size_t n_spatial_locs() const { return model().domain().dof(); }
+      auto D() const { return DVector<double>::Ones(Psi_.rows()).asDiagonal(); }
       DMatrix<double> locs() const { return model().domain().dofCoords(); }
       // set locations (nothing to do, locations are implicitly set to mesh nodes)
       template <typename Derived>
@@ -142,9 +109,7 @@ namespace fdaPDE
       DMatrix<double> locs_;   // matrix of spatial locations p_1, p2_, ... p_n
       DEFINE_CRTP_MODEL_UTILS; // import model() method (const and non-const access)
       typedef SamplingBase<Model> Base;
-      using Base::B_;
       using Base::Psi_;
-      using Base::set_nan;   // zero rows of \Psi matrix depending on missingness-pattern
       using Base::tensorize; // tensorize matrix \Psi for space-time problems
     public:
       // constructor
@@ -163,7 +128,8 @@ namespace fdaPDE
         Psi_.resize(n, N);
         // triplet list to fill sparse matrix
         std::vector<fdaPDE::Triplet<double>> tripletList;
-        tripletList.reserve(5 * n);
+        // a point is evaluated non-zero at most a number of times equal to the number of basis over a mesh element
+        tripletList.reserve(n * ct_nnodes(Model::M, Model::K));
 
         auto gse = model().gse(); // geometric search engine
         // cycle over all locations
@@ -186,14 +152,11 @@ namespace fdaPDE
         Psi_.setFromTriplets(tripletList.begin(), tripletList.end());
         Psi_.makeCompressed();
         tensorize(); // tensorize \Psi for space-time problems
-        set_nan();   // correct for missing observations
       };
 
       // getters
-      using Base::Psi; // getter to not nan-corrected \Psi
-      const SpMatrix<double> &Psi() const { return model().has_nan() ? B_ : Psi_; }
-      auto PsiTD() const { return model().has_nan() ? B_.transpose() : Psi_.transpose(); }
       std::size_t n_spatial_locs() const { return locs_.rows(); }
+      auto D() const { return DVector<double>::Ones(Psi_.rows()).asDiagonal(); }
       const DMatrix<double> &locs() const { return locs_; }
       // setter
       void set_spatial_locations(const DMatrix<double> &locs) { locs_ = locs; }
@@ -208,9 +171,7 @@ namespace fdaPDE
       DiagMatrix<double> D_;    // diagonal matrix of subdomains' measures
       DEFINE_CRTP_MODEL_UTILS;  // import model() method (const and non-const access)
       typedef SamplingBase<Model> Base;
-      using Base::B_;
       using Base::Psi_;
-      using Base::set_nan;   // zero rows of \Psi matrix depending on missingness-pattern
       using Base::tensorize; // tensorize matrix \Psi for space-time problems
     public:
       // constructor
@@ -229,7 +190,7 @@ namespace fdaPDE
         Psi_.resize(n, N);
         // triplet list to fill sparse matrix
         std::vector<fdaPDE::Triplet<double>> tripletList;
-        tripletList.reserve(n * N);
+        tripletList.reserve(n * N); // n is small, should not cause any bad_alloc
 
         DVector<double> D; // store measure of subdomains, this will be ported to a diagonal matrix at the end
         D.resize(subdomains_.rows());
@@ -286,13 +247,10 @@ namespace fdaPDE
         Psi_.setFromTriplets(tripletList.begin(), tripletList.end());
         Psi_.makeCompressed();
         tensorize(); // tensorize \Psi for space-time problems
-        set_nan();   // correct for missing observations
       };
 
       // getters
-      using Base::Psi; // getter to not nan-corrected \Psi
-      const SpMatrix<double> &Psi() const { return model().has_nan() ? B_ : Psi_; }
-      auto PsiTD() const { return model().has_nan() ? B_.transpose() * D_ : Psi_.transpose() * D_; }
+      auto PsiTD(not_nan) const { return Psi_.transpose() * D_; }
       std::size_t n_spatial_locs() const { return subdomains_.rows(); }
       const DiagMatrix<double> &D() const { return D_; }
       const DMatrix<int> &locs() const { return subdomains_; }

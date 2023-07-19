@@ -18,10 +18,6 @@ namespace fdaPDE
     namespace models
     {
 
-        struct fixed_lambda {};
-        struct gcv_lambda_selection {};
-        struct kcv_lambda_selection {};
-
         // base class for any FPCA_CS model
         template <typename PDE, typename RegularizationType, typename SamplingDesign, typename lambda_selection_strategy>
         class FPCA_CS : public FunctionalBase<FPCA_CS<PDE, RegularizationType, SamplingDesign, lambda_selection_strategy>>
