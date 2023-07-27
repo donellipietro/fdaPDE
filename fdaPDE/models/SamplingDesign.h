@@ -135,7 +135,7 @@ namespace fdaPDE
         // cycle over all locations
         for (std::size_t i = 0; i < locs_.rows(); ++i)
         {
-          SVector<model_traits<Model>::PDE::local_dimension> p_i(locs_.row(i));
+          SVector<model_traits<Model>::PDE::embedding_dimension> p_i(locs_.row(i));
           // search element containing the point
           auto e = gse.search(p_i);
           // update \Psi matrix

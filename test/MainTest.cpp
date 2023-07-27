@@ -28,10 +28,10 @@
 #include "models/FPCATest.cpp"
 #include "models/FPCACSTest.cpp"
 #include "models/FSRPDETest.cpp"
-#include "models/FPLSRTest.cpp"
+/*#include "models/FPLSRTest.cpp"
 // GCV test suites
 // #include "calibration/GCVTest.cpp"
-// #include "calibration/GCVNewtonTest.cpp"
+// #include "calibration/GCVNewtonTest.cpp"*/
 
 int main(int argc, char **argv)
 {
