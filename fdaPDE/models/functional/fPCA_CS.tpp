@@ -1,59 +1,42 @@
-// solution in case of fixed \lambda
 template <typename PDE, typename RegularizationType,
           typename SamplingDesign, typename lambda_selection_strategy>
-void FPCA_CS<PDE, RegularizationType, SamplingDesign, lambda_selection_strategy>::solve_(fixed_lambda)
+void FPCA_CS<PDE, RegularizationType, SamplingDesign, lambda_selection_strategy>::init_model()
 {
-    // Data
-    DMatrix<double> X = data().template get<double>(OBSERVATIONS_BLK);
-
     // Penalty matrix
     // std::cout << "Penalty matrix" << std::endl;
     if (mass_lumping_)
     {
         unsigned int K = n_basis();
-        SpMatrix<double> invR0_;
-        invR0_.resize(K, K);
-        invR0_.reserve(K);
+        SpMatrix<double> invR0;
+        invR0.resize(K, K);
+        invR0.reserve(K);
+
+        // triplet list to fill sparse matrix
+        std::vector<fdaPDE::Triplet<double>> tripletList;
+        tripletList.reserve(K);
+
         for (std::size_t i = 0; i < K; ++i)
-        {
-            invR0_.insert(i, i) = 1 / R0().col(i).sum();
-        }
-        invR0_.makeCompressed();
-        P_ = R1() * invR0_ * R1();
+            tripletList.emplace_back(i, i, 1 / R0().col(i).sum());
+        // finalize construction
+        invR0.setFromTriplets(tripletList.begin(), tripletList.end());
+        invR0.makeCompressed();
+
+        P_ = R1() * invR0 * R1();
     }
     else
     {
-        fdaPDE::SparseLU<SpMatrix<double>> invR0_;
-        invR0_.compute(R0());
-        P_ = R1() * invR0_.solve(R1());
+        fdaPDE::SparseLU<SpMatrix<double>> invR0;
+        invR0.compute(R0());
+        P_ = R1() * invR0.solve(R1());
     }
 
-    // Resolution
-    // std::cout << "RSVD" << std::endl;
-    RSVD rsvd(X, lambda()[0], n_pc_, Psi(not_nan()), P_);
+    return;
+}
 
-    // for (std::size_t i = 0; i < n_pc_; i++)
-    // {
-    //     // find vectors s,f minimizing \norm_F{Y - s^T*f}^2 + (s^T*s)*P(f) fixed \lambda
-
-    //     rsvd.solve();
-
-    //     loadings_.col(i) = rsvd.loadings().transpose();
-    //     double f_n_norm = std::sqrt(loadings_.col(i).dot(R0() * loadings_.col(i)));
-    //     loadings_.col(i) = loadings_.col(i) / f_n_norm;
-    //     scores_.col(i) = rsvd.scores() * f_n_norm;
-
-    //     // subtract computed PC from data
-    //     X -= scores_.col(i) * loadings_.col(i).transpose();
-    //     rsvd.set_data(X);
-    // }
-
-    rsvd.solve();
-
-    // std::cout << "Loadings" << std::endl;
-    loadings_ = Psi(not_nan()) * (rsvd.loadings()).transpose();
-    // std::cout << "Scores" << std::endl;
-    scores_ = rsvd.scores();
+template <typename PDE, typename RegularizationType,
+          typename SamplingDesign, typename lambda_selection_strategy>
+void FPCA_CS<PDE, RegularizationType, SamplingDesign, lambda_selection_strategy>::normalize_results()
+{
 
     // std::cout << "Normalization" << std::endl;
     for (std::size_t i = 0; i < n_pc_; i++)
@@ -67,6 +50,29 @@ void FPCA_CS<PDE, RegularizationType, SamplingDesign, lambda_selection_strategy>
         loadings_.col(i) /= f_n_norm;
         scores_.col(i) *= f_n_norm;
     }
+
+    return;
+}
+
+// solution in case of fixed \lambda
+template <typename PDE, typename RegularizationType,
+          typename SamplingDesign, typename lambda_selection_strategy>
+void FPCA_CS<PDE, RegularizationType, SamplingDesign, lambda_selection_strategy>::solve_(fixed_lambda)
+{
+
+    // Resolution
+    // std::cout << "RSVD" << std::endl;
+    RSVD rsvd(data().template get<double>(OBSERVATIONS_BLK), lambda()[0], n_pc_, Psi(not_nan()), P_);
+    rsvd.solve();
+
+    // Results
+    // std::cout << "Loadings" << std::endl;
+    loadings_ = Psi(not_nan()) * (rsvd.loadings()).transpose();
+    // std::cout << "Scores" << std::endl;
+    scores_ = rsvd.scores();
+
+    // Normalization
+    normalize_results();
 
     return;
 }

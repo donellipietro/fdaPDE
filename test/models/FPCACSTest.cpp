@@ -60,7 +60,7 @@ TEST(FPCA_CS, Test1_Laplacian_GeostatisticalAtNodes_Fixed)
 
     //   **  test correctness of computed results  **
 
-    bool VERBOSE = false;
+    bool VERBOSE = true;
 
     if (VERBOSE)
     {
@@ -73,6 +73,7 @@ TEST(FPCA_CS, Test1_Laplacian_GeostatisticalAtNodes_Fixed)
         std::cout << expectedLoadings.topRows(5) << std::endl;
         std::cout << "Obtained:" << std::endl;
         std::cout << computedLoadings.topRows(5) << std::endl;
+        std::cout << std::endl;
 
         // scores vector
         SpMatrix<double> expectedScores;
@@ -83,6 +84,7 @@ TEST(FPCA_CS, Test1_Laplacian_GeostatisticalAtNodes_Fixed)
         std::cout << expectedScores.topRows(5) << std::endl;
         std::cout << "Obtained:" << std::endl;
         std::cout << computedScores.topRows(5) << std::endl;
+        std::cout << std::endl;
 
         // Product
         // EXPECT_TRUE(almost_equal(DMatrix<double>(expectedScores * expectedLoadings.transpose()), computedScores * computedLoadings.transpose()));
