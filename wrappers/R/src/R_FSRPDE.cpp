@@ -21,6 +21,8 @@ using fdaPDE::core::MESH::ADT;
 
 RCPP_EXPOSED_AS(Laplacian_2D_Order1)
 RCPP_EXPOSED_WRAP(Laplacian_2D_Order1)
+RCPP_EXPOSED_AS(Laplacian_Surface_Order1)
+RCPP_EXPOSED_WRAP(Laplacian_Surface_Order1)
 RCPP_EXPOSED_AS(Laplacian_3D_Order1)
 RCPP_EXPOSED_WRAP(Laplacian_3D_Order1)
 
@@ -84,10 +86,8 @@ public:
   }
 };
 
-// fSRPDE Rcpp module
+// Laplacian_2D_Order1, locations == nodes
 typedef R_FSRPDE<Laplacian_2D_Order1, fdaPDE::models::GeoStatMeshNodes> FSRPDE_Laplacian_2D_GeoStatNodes;
-
-// locations == nodes
 RCPP_MODULE(FSRPDE_Laplacian_2D_GeoStatNodes)
 {
   Rcpp::class_<FSRPDE_Laplacian_2D_GeoStatNodes>("FSRPDE_Laplacian_2D_GeoStatNodes")
@@ -109,7 +109,7 @@ RCPP_MODULE(FSRPDE_Laplacian_2D_GeoStatNodes)
       .method("solve", &FSRPDE_Laplacian_2D_GeoStatNodes::solve);
 }
 
-// locations != nodes
+// Laplacian_2D_Order1, locations != nodes
 typedef R_FSRPDE<Laplacian_2D_Order1, fdaPDE::models::GeoStatLocations> FSRPDE_Laplacian_2D_GeoStatLocations;
 RCPP_MODULE(FSRPDE_Laplacian_2D_GeoStatLocations)
 {
@@ -131,4 +131,51 @@ RCPP_MODULE(FSRPDE_Laplacian_2D_GeoStatLocations)
       .method("set_observations", &FSRPDE_Laplacian_2D_GeoStatLocations::set_observations)
       // Solve method
       .method("solve", &FSRPDE_Laplacian_2D_GeoStatLocations::solve);
+}
+
+// Laplacian_Surface_Order1, locations == nodes
+typedef R_FSRPDE<Laplacian_Surface_Order1, fdaPDE::models::GeoStatMeshNodes> FSRPDE_Laplacian_Surface_GeoStatNodes;
+RCPP_MODULE(FSRPDE_Laplacian_Surface_GeoStatNodes)
+{
+  Rcpp::class_<FSRPDE_Laplacian_Surface_GeoStatNodes>("FSRPDE_Laplacian_Surface_GeoStatNodes")
+      .constructor<Laplacian_Surface_Order1>()
+      // Initializations
+      .method("init", &FSRPDE_Laplacian_Surface_GeoStatNodes::init)
+      // .method("init_regularization", &FSRPDE_Laplacian_Surface_GeoStatNodes::init_regularization)
+      //.method("init_pde", &FSRPDE_Laplacian_Surface_GeoStatNodes::init_pde)
+      // Getters
+      .method("f", &FSRPDE_Laplacian_Surface_GeoStatNodes::f)
+      .method("fitted", &FSRPDE_Laplacian_Surface_GeoStatNodes::fitted)
+      // .method("R0", &FSRPDE_Laplacian_Surface_GeoStatNodes::R0)
+      // .method("Psi", &FSRPDE_Laplacian_Surface_GeoStatNodes::Psi)
+      // Setters
+      .method("set_lambda_s", &FSRPDE_Laplacian_Surface_GeoStatNodes::set_lambda_s)
+      // .method("set_lambdas", &FSRPDE_Laplacian_Surface_GeoStatNodes::set_lambdas)
+      .method("set_observations", &FSRPDE_Laplacian_Surface_GeoStatNodes::set_observations)
+      // Solve method
+      .method("solve", &FSRPDE_Laplacian_Surface_GeoStatNodes::solve);
+}
+
+// Laplacian_Surface_Order1, locations != nodes
+typedef R_FSRPDE<Laplacian_Surface_Order1, fdaPDE::models::GeoStatLocations> FSRPDE_Laplacian_Surface_GeoStatLocations;
+RCPP_MODULE(FSRPDE_Laplacian_Surface_GeoStatLocations)
+{
+  Rcpp::class_<FSRPDE_Laplacian_Surface_GeoStatLocations>("FSRPDE_Laplacian_Surface_GeoStatLocations")
+      .constructor<Laplacian_Surface_Order1>()
+      // Initializations
+      .method("init", &FSRPDE_Laplacian_Surface_GeoStatLocations::init)
+      // .method("init_regularization", &FSRPDE_Laplacian_Surface_GeoStatLocations::init_regularization)
+      // .method("init_pde", &FSRPDE_Laplacian_Surface_GeoStatLocations::init_pde)
+      // Getters
+      .method("f", &FSRPDE_Laplacian_Surface_GeoStatLocations::f)
+      .method("fitted", &FSRPDE_Laplacian_Surface_GeoStatLocations::fitted)
+      // .method("R0", &FSRPDE_Laplacian_Surface_GeoStatLocations::R0)
+      // .method("Psi", &FSRPDE_Laplacian_Surface_GeoStatLocations::Psi)
+      // Setters
+      .method("set_lambda_s", &FSRPDE_Laplacian_Surface_GeoStatLocations::set_lambda_s)
+      // .method("set_lambdas", &FSRPDE_Laplacian_Surface_GeoStatLocations::set_lambdas)
+      .method("set_locations", &FSRPDE_Laplacian_Surface_GeoStatLocations::set_locations)
+      .method("set_observations", &FSRPDE_Laplacian_Surface_GeoStatLocations::set_observations)
+      // Solve method
+      .method("solve", &FSRPDE_Laplacian_Surface_GeoStatLocations::solve);
 }
