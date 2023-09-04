@@ -2,20 +2,31 @@ template <typename PDE, typename RegularizationType,
           typename SamplingDesign, typename lambda_selection_strategy>
 void FPCA_CS<PDE, RegularizationType, SamplingDesign, lambda_selection_strategy>::init_model()
 {
+
+    if (verbose_)
+        std::cout << "\nfPCA (Closed Form Solution)" << std::endl;
+
+    // Dimensions
+    N_ = X().cols();
+    S_ = X().rows();
+    K_ = n_basis();
+
     // Penalty matrix
-    // std::cout << "Penalty matrix" << std::endl;
     if (mass_lumping_)
     {
-        unsigned int K = n_basis();
+
+        if (verbose_)
+            std::cout << "- Penalty matrix assembling (Mass Lumping)" << std::endl;
+
         SpMatrix<double> invR0;
-        invR0.resize(K, K);
-        invR0.reserve(K);
+        invR0.resize(K_, K_);
+        invR0.reserve(K_);
 
         // triplet list to fill sparse matrix
         std::vector<fdaPDE::Triplet<double>> tripletList;
-        tripletList.reserve(K);
+        tripletList.reserve(K_);
 
-        for (std::size_t i = 0; i < K; ++i)
+        for (std::size_t i = 0; i < K_; ++i)
             tripletList.emplace_back(i, i, 1 / R0().col(i).sum());
         // finalize construction
         invR0.setFromTriplets(tripletList.begin(), tripletList.end());
@@ -25,6 +36,10 @@ void FPCA_CS<PDE, RegularizationType, SamplingDesign, lambda_selection_strategy>
     }
     else
     {
+
+        if (verbose_)
+            std::cout << "- Penalty matrix assembling (complete)" << std::endl;
+
         fdaPDE::SparseLU<SpMatrix<double>> invR0;
         invR0.compute(R0());
         P_ = R1() * invR0.solve(R1());
@@ -38,17 +53,18 @@ template <typename PDE, typename RegularizationType,
 void FPCA_CS<PDE, RegularizationType, SamplingDesign, lambda_selection_strategy>::normalize_results()
 {
 
-    // std::cout << "Normalization" << std::endl;
     for (std::size_t i = 0; i < n_pc_; i++)
     {
-        double f_n_norm;
+        double f_n_norm = 0;
         if constexpr (is_space_only<decltype(*this)>::value)
-            f_n_norm = std::sqrt(loadings_.col(i).dot(R0() * loadings_.col(i)));
+            f_n_norm = std::sqrt(W_.col(i).dot(R0() * W_.col(i)));
         else
             f_n_norm = loadings_.col(i).norm();
-        // std::cout << f_n_norm << std::endl;
+
+        W_.col(i) /= f_n_norm;
         loadings_.col(i) /= f_n_norm;
-        scores_.col(i) *= f_n_norm;
+
+        coefficients_.insert(i, i) = f_n_norm;
     }
 
     return;
@@ -61,17 +77,21 @@ void FPCA_CS<PDE, RegularizationType, SamplingDesign, lambda_selection_strategy>
 {
 
     // Resolution
-    // std::cout << "RSVD" << std::endl;
-    RSVD rsvd(data().template get<double>(OBSERVATIONS_BLK), lambda()[0], n_pc_, Psi(not_nan()), P_);
+    if (verbose_)
+        std::cout << "- RSVD" << std::endl;
+    RSVD rsvd(data().template get<double>(OBSERVATIONS_BLK), lambda()[0], n_pc_, Psi(not_nan()), P_, verbose_);
     rsvd.solve();
 
     // Results
     // std::cout << "Loadings" << std::endl;
-    loadings_ = Psi(not_nan()) * (rsvd.loadings()).transpose();
+    W_ = rsvd.W();
+    loadings_ = Psi(not_nan()) * W_;
     // std::cout << "Scores" << std::endl;
-    scores_ = rsvd.scores();
+    scores_ = rsvd.H();
 
     // Normalization
+    if (verbose_)
+        std::cout << "- Scores and Loadings normalization" << std::endl;
     normalize_results();
 
     return;
@@ -189,8 +209,11 @@ template <typename PDE, typename RegularizationType,
 void FPCA_CS<PDE, RegularizationType, SamplingDesign, lambda_selection_strategy>::solve()
 {
     // pre-allocate space
-    loadings_.resize(X().cols(), n_pc_);
-    scores_.resize(X().rows(), n_pc_);
+    loadings_.resize(K_, n_pc_);
+    loadings_.resize(S_, n_pc_);
+    scores_.resize(N_, n_pc_);
+    coefficients_.resize(n_pc_, n_pc_);
+    coefficients_.reserve(n_pc_);
 
     // dispatch to desired solution strategy
     solve_(lambda_selection_strategy());

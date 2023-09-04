@@ -29,6 +29,9 @@ using fdaPDE::testing::almost_equal;
  */
 TEST(FPCA_CS, Test1_Laplacian_GeostatisticalAtNodes_Fixed)
 {
+
+    bool VERBOSE = true;
+
     // define domain and regularizing PDE
     MeshLoader<Mesh2D<>> domain("unit_square");
     auto L = Laplacian();
@@ -41,6 +44,7 @@ TEST(FPCA_CS, Test1_Laplacian_GeostatisticalAtNodes_Fixed)
             fdaPDE::models::fixed_lambda>
         model(problem);
     model.setLambdaS(lambda);
+    model.set_verbose(VERBOSE);
     model.set_mass_lumping(true);
 
     // load data from .csv files
@@ -60,29 +64,28 @@ TEST(FPCA_CS, Test1_Laplacian_GeostatisticalAtNodes_Fixed)
 
     //   **  test correctness of computed results  **
 
-    bool VERBOSE = true;
-
     if (VERBOSE)
     {
+        std::cout << std::endl;
         // loadings vector
         SpMatrix<double> expectedLoadings;
         Eigen::loadMarket(expectedLoadings, "data/models/FPCA/2D_test1/loadings.mtx");
         DMatrix<double> computedLoadings = model.loadings();
         // EXPECT_TRUE(almost_equal(DMatrix<double>(expectedLoadings), computedLoadings));
-        std::cout << "Expected:" << std::endl;
+        std::cout << "Expected loadings:" << std::endl;
         std::cout << expectedLoadings.topRows(5) << std::endl;
-        std::cout << "Obtained:" << std::endl;
+        std::cout << "Obtained loadings:" << std::endl;
         std::cout << computedLoadings.topRows(5) << std::endl;
         std::cout << std::endl;
 
         // scores vector
         SpMatrix<double> expectedScores;
         Eigen::loadMarket(expectedScores, "data/models/FPCA/2D_test1/scores.mtx");
-        DMatrix<double> computedScores = model.scores();
+        DMatrix<double> computedScores = model.scores() * model.coefficients();
         // EXPECT_TRUE(almost_equal(DMatrix<double>(expectedScores), computedScores));
-        std::cout << "Expected:" << std::endl;
+        std::cout << "Expected scores:" << std::endl;
         std::cout << expectedScores.topRows(5) << std::endl;
-        std::cout << "Obtained:" << std::endl;
+        std::cout << "Obtained scores:" << std::endl;
         std::cout << computedScores.topRows(5) << std::endl;
         std::cout << std::endl;
 

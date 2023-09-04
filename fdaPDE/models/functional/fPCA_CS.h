@@ -34,12 +34,21 @@ namespace fdaPDE
             fdaPDE::SparseLU<SpMatrix<double>> invPsiTPsi_;
             SpMatrix<double> P_{};
 
-            // problem solution
+            // Problem solution
+            DMatrix<double> W_;
             DMatrix<double> loadings_;
             DMatrix<double> scores_;
+            SpMatrix<double> coefficients_;
+
+            // Dimensions
+            unsigned int N_;
+            unsigned int S_;
+            unsigned int K_;
 
             // Options
-            bool mass_lumping_ = false;
+            bool verbose_ = false;
+            bool mass_lumping_ = true;
+            bool iterative_ = false;
 
             // tag dispatched private methods for computation of PCs, ** to be removed **
             void solve_(fixed_lambda);
@@ -67,12 +76,16 @@ namespace fdaPDE
             virtual void solve(); // compute principal components
 
             // getters
+            const DMatrix<double> &W() const { return W_; }
             const DMatrix<double> &loadings() const { return loadings_; }
             const DMatrix<double> &scores() const { return scores_; }
+            const SpMatrix<double> &coefficients() const { return coefficients_; }
 
             // setters
             void set_npc(std::size_t n_pc) { n_pc_ = n_pc; }
+            void set_verbose(bool verbose) { verbose_ = verbose; }
             void set_mass_lumping(bool mass_lumping) { mass_lumping_ = mass_lumping; }
+            void set_iterative(bool iterative) { iterative_ = iterative; }
 
             // methods
             void normalize_results();
