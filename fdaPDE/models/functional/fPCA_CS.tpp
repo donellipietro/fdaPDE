@@ -7,8 +7,8 @@ void FPCA_CS<PDE, RegularizationType, SamplingDesign, lambda_selection_strategy>
         std::cout << "\nfPCA (Closed Form Solution)" << std::endl;
 
     // Dimensions
-    N_ = X().cols();
-    S_ = X().rows();
+    N_ = X().rows();
+    S_ = X().cols();
     K_ = n_basis();
 
     // Penalty matrix
@@ -50,22 +50,30 @@ void FPCA_CS<PDE, RegularizationType, SamplingDesign, lambda_selection_strategy>
 
 template <typename PDE, typename RegularizationType,
           typename SamplingDesign, typename lambda_selection_strategy>
+void FPCA_CS<PDE, RegularizationType, SamplingDesign, lambda_selection_strategy>::normalize_results_i(std::size_t i)
+{
+
+    double f_n_norm = 0;
+    if constexpr (is_space_only<decltype(*this)>::value)
+        f_n_norm = std::sqrt(W_.col(i).dot(R0() * W_.col(i)));
+    else
+        f_n_norm = loadings_.col(i).norm();
+
+    W_.col(i) /= f_n_norm;
+    loadings_.col(i) /= f_n_norm;
+
+    coefficients_.insert(i, i) = f_n_norm;
+
+    return;
+}
+
+template <typename PDE, typename RegularizationType,
+          typename SamplingDesign, typename lambda_selection_strategy>
 void FPCA_CS<PDE, RegularizationType, SamplingDesign, lambda_selection_strategy>::normalize_results()
 {
 
     for (std::size_t i = 0; i < n_pc_; i++)
-    {
-        double f_n_norm = 0;
-        if constexpr (is_space_only<decltype(*this)>::value)
-            f_n_norm = std::sqrt(W_.col(i).dot(R0() * W_.col(i)));
-        else
-            f_n_norm = loadings_.col(i).norm();
-
-        W_.col(i) /= f_n_norm;
-        loadings_.col(i) /= f_n_norm;
-
-        coefficients_.insert(i, i) = f_n_norm;
-    }
+        normalize_results_i(i);
 
     return;
 }
@@ -77,22 +85,53 @@ void FPCA_CS<PDE, RegularizationType, SamplingDesign, lambda_selection_strategy>
 {
 
     // Resolution
-    if (verbose_)
-        std::cout << "- RSVD" << std::endl;
-    RSVD rsvd(data().template get<double>(OBSERVATIONS_BLK), lambda()[0], n_pc_, Psi(not_nan()), P_, verbose_);
-    rsvd.solve();
+    if (iterative_)
+    {
+        // Data
+        DMatrix<double> X = data().template get<double>(OBSERVATIONS_BLK);
 
-    // Results
-    // std::cout << "Loadings" << std::endl;
-    W_ = rsvd.W();
-    loadings_ = Psi(not_nan()) * W_;
-    // std::cout << "Scores" << std::endl;
-    scores_ = rsvd.H();
+        // RSVD
+        if (verbose_)
+            std::cout << "- RSVD (Iterative)" << std::endl;
 
-    // Normalization
-    if (verbose_)
-        std::cout << "- Scores and Loadings normalization" << std::endl;
-    normalize_results();
+        RSVD rsvd(X, lambda()[0], 1, Psi(not_nan()), P_, verbose_);
+        rsvd.init();
+        for (std::size_t i = 0; i < n_pc_; i++)
+        {
+
+            if (verbose_)
+                std::cout << "  Component " << i + 1 << ":" << std::endl;
+
+            rsvd.solve();
+
+            W_.col(i) = rsvd.W().col(0);
+            loadings_.col(i) = Psi(not_nan()) * W_.col(i);
+            scores_.col(i) = rsvd.H().col(0);
+            normalize_results_i(i);
+
+            // Subtract computed PC from data
+            X -= coefficients_.coeff(i, i) * scores_.col(i) * loadings_.col(i).transpose();
+        }
+    }
+    else
+    {
+        // RSVD
+        if (verbose_)
+            std::cout << "- RSVD (Monolithic)" << std::endl;
+
+        RSVD rsvd(data().template get<double>(OBSERVATIONS_BLK), lambda()[0], n_pc_, Psi(not_nan()), P_, verbose_);
+        rsvd.init();
+        rsvd.solve();
+        W_ = rsvd.W();
+        loadings_ = Psi(not_nan()) * W_;
+        scores_ = rsvd.H();
+
+        // Normalization
+        if (verbose_)
+            std::cout << "- Scores and Loadings normalization" << std::endl;
+
+        normalize_results();
+    }
 
     return;
 }
@@ -209,7 +248,7 @@ template <typename PDE, typename RegularizationType,
 void FPCA_CS<PDE, RegularizationType, SamplingDesign, lambda_selection_strategy>::solve()
 {
     // pre-allocate space
-    loadings_.resize(K_, n_pc_);
+    W_.resize(K_, n_pc_);
     loadings_.resize(S_, n_pc_);
     scores_.resize(N_, n_pc_);
     coefficients_.resize(n_pc_, n_pc_);

@@ -16,10 +16,17 @@ public:
     // Intermediate steps matrices
     DMatrix<double> C_;
     DMatrix<double> D_;
+    Eigen::LLT<DMatrix<double>> cholesky_;
+    Eigen::PartialPivLU<DMatrix<double>> invD_;
 
     // Solutions
     DMatrix<double> H_;
     DMatrix<double> W_;
+
+    // Dimensions
+    unsigned int N_;
+    unsigned int S_;
+    unsigned int K_;
 
     // Options
     bool verbose_;
@@ -28,16 +35,19 @@ public:
     RSVD(const DMatrix<double> &X, const double &lambda, const unsigned int &rank, const SpMatrix<double> &Psi, const SpMatrix<double> &P, bool verbose = false)
         : X_(X), lambda_(lambda), rank_(rank), Psi_(Psi), P_(P), verbose_(verbose)
     {
-        H_.resize(X_.rows(), rank_);
-        W_.resize(X_.cols(), rank_);
+        N_ = X_.rows();
+        S_ = X_.cols();
+        K_ = P_.rows();
+        H_.resize(N_, rank_);
+        W_.resize(K_, rank_);
     };
 
     // Methods
-    void solve()
-    {
-        // std::cout << "solve" << std::endl;
 
-        std::size_t K = P_.rows();
+    void init()
+    {
+
+        // std::cout << "init" << std::endl;
 
         if (verbose_)
             std::cout << "  - C matrix assembling" << std::endl;
@@ -45,17 +55,25 @@ public:
 
         if (verbose_)
             std::cout << "  - C matrix cholesky decomposition" << std::endl;
-        Eigen::LLT<DMatrix<double>> cholesky(C_);
-        D_ = cholesky.matrixL();
+        cholesky_.compute(C_);
+        D_ = cholesky_.matrixL();
 
         if (verbose_)
             std::cout << "  - D matrix LU decomposition" << std::endl;
-        Eigen::PartialPivLU<DMatrix<double>> invD;
-        invD.compute(D_);
+        invD_.compute(D_);
+
+        // std::cout << "init" << std::endl;
+
+        return;
+    }
+
+    void solve()
+    {
+        // std::cout << "solve" << std::endl;
 
         if (verbose_)
             std::cout << "  - SVD" << std::endl;
-        Eigen::JacobiSVD<DMatrix<double>> svd(X_ * Psi_ * (invD.solve(DMatrix<double>::Identity(K, K))).transpose(), Eigen::ComputeThinU | Eigen::ComputeThinV);
+        Eigen::JacobiSVD<DMatrix<double>> svd(X_ * Psi_ * (invD_.solve(DMatrix<double>::Identity(K_, K_))).transpose(), Eigen::ComputeThinU | Eigen::ComputeThinV);
 
         if (verbose_)
             std::cout << "  - Results, H" << std::endl;
@@ -63,9 +81,11 @@ public:
 
         if (verbose_)
             std::cout << "  - Results, W" << std::endl;
-        W_ = cholesky.solve(DMatrix<double>::Identity(K, K)) * Psi_.transpose() * X_.transpose() * H_;
+        W_ = cholesky_.solve(DMatrix<double>::Identity(K_, K_)) * Psi_.transpose() * X_.transpose() * H_;
 
         // std::cout << "solve" << std::endl;
+
+        return;
     }
 
     // Getters

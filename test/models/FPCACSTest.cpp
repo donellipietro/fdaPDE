@@ -30,7 +30,7 @@ using fdaPDE::testing::almost_equal;
 TEST(FPCA_CS, Test1_Laplacian_GeostatisticalAtNodes_Fixed)
 {
 
-    bool VERBOSE = true;
+    bool VERBOSE = false;
 
     // define domain and regularizing PDE
     MeshLoader<Mesh2D<>> domain("unit_square");
@@ -40,12 +40,14 @@ TEST(FPCA_CS, Test1_Laplacian_GeostatisticalAtNodes_Fixed)
 
     // define statistical model
     double lambda = 1e-2;
+
     FPCA_CS<decltype(problem), fdaPDE::models::SpaceOnly, fdaPDE::models::GeoStatMeshNodes,
             fdaPDE::models::fixed_lambda>
         model(problem);
     model.setLambdaS(lambda);
     model.set_verbose(VERBOSE);
     model.set_mass_lumping(true);
+    model.set_iterative(false);
 
     // load data from .csv files
     CSVReader<double> reader{};

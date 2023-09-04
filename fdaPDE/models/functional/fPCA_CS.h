@@ -88,6 +88,7 @@ namespace fdaPDE
             void set_iterative(bool iterative) { iterative_ = iterative; }
 
             // methods
+            void normalize_results_i(std::size_t i);
             void normalize_results();
         };
         template <typename PDE_, typename SamplingDesign_, typename lambda_selection_strategy>
