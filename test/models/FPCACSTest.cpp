@@ -27,7 +27,6 @@ using fdaPDE::testing::almost_equal;
    order FE:     1
    missing data: no
  */
-/*
 TEST(FPCA_CS, Test1_Laplacian_GeostatisticalAtNodes_Fixed)
 {
 
@@ -84,7 +83,7 @@ TEST(FPCA_CS, Test1_Laplacian_GeostatisticalAtNodes_Fixed)
         // scores vector
         SpMatrix<double> expectedScores;
         Eigen::loadMarket(expectedScores, "data/models/FPCA/2D_test1/scores.mtx");
-        DMatrix<double> computedScores = model.scores() * model.coefficients();
+        DMatrix<double> computedScores = model.scores();
         // EXPECT_TRUE(almost_equal(DMatrix<double>(expectedScores), computedScores));
         std::cout << "Expected scores:" << std::endl;
         std::cout << expectedScores.topRows(5) << std::endl;
@@ -97,7 +96,6 @@ TEST(FPCA_CS, Test1_Laplacian_GeostatisticalAtNodes_Fixed)
         // std::cout << "Error norm: " << (DMatrix<double>(expectedScores * expectedLoadings.transpose()) - computedScores * computedLoadings.transpose()).lpNorm<Eigen::Infinity>() << std::endl;
     }
 }
-*/
 
 /* test 2
    domain:       unit square [1,1] x [1,1]
@@ -174,6 +172,7 @@ TEST(FPCA_CS, Test2_Laplacian_GeostatisticalAtLocations_GCV)
    missing data: no
    KCV smoothing parameter selection, 10 folds
  */
+/*
 TEST(FPCA_CS, Test3_Laplacian_GeostatisticalAtLocations_KFoldCV)
 {
 
@@ -237,7 +236,7 @@ TEST(FPCA_CS, Test3_Laplacian_GeostatisticalAtLocations_KFoldCV)
         // scores vector
         SpMatrix<double> expectedScores;
         Eigen::loadMarket(expectedScores, "data/models/FPCA/2D_test3/scores.mtx");
-        DMatrix<double> computedScores = model.scores() * model.coefficients();
+        DMatrix<double> computedScores = model.scores();
         // EXPECT_TRUE(almost_equal(DMatrix<double>(expectedScores), computedScores));
         std::cout << "Expected scores:" << std::endl;
         std::cout << expectedScores.topRows(5) << std::endl;
@@ -250,6 +249,7 @@ TEST(FPCA_CS, Test3_Laplacian_GeostatisticalAtLocations_KFoldCV)
         // std::cout << "Error norm: " << (DMatrix<double>(expectedScores * expectedLoadings.transpose()) - computedScores * computedLoadings.transpose()).lpNorm<Eigen::Infinity>() << std::endl;
     }
 }
+*/
 
 // /* test 2
 //    domain:       unit square [1,1] x [1,1]

@@ -49,6 +49,7 @@ namespace fdaPDE
             bool verbose_ = false;
             bool mass_lumping_ = true;
             bool iterative_ = false;
+            unsigned int coefficients_position_ = 1; // 0: both scores and loadings are normalized, 1: coeff in scores, 2: coeff in loadings
 
             // tag dispatched private methods for computation of PCs, ** to be removed **
             void solve_(fixed_lambda);
@@ -76,9 +77,9 @@ namespace fdaPDE
             virtual void solve(); // compute principal components
 
             // getters
-            const DMatrix<double> &W() const { return W_; }
-            const DMatrix<double> &loadings() const { return loadings_; }
             const DMatrix<double> &scores() const { return scores_; }
+            const DMatrix<double> &loadings() const { return loadings_; }
+            const DMatrix<double> &W() const { return W_; }
             const SpMatrix<double> &coefficients() const { return coefficients_; }
 
             // setters
@@ -86,6 +87,7 @@ namespace fdaPDE
             void set_verbose(bool verbose) { verbose_ = verbose; }
             void set_mass_lumping(bool mass_lumping) { mass_lumping_ = mass_lumping; }
             void set_iterative(bool iterative) { iterative_ = iterative; }
+            void set_coefficients_position(bool coefficients_position) { coefficients_position_ = coefficients_position; }
 
             // methods
             void normalize_results_i(std::size_t i);

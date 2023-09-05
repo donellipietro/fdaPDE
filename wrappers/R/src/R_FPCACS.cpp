@@ -61,14 +61,19 @@ public:
   }
 
   // Getters
+  DMatrix<double> W() const { return model_.W(); }
   DMatrix<double> loadings() const { return model_.loadings(); }
   DMatrix<double> scores() const { return model_.scores(); }
+  DMatrix<double> coefficients() const { return model_.coefficients(); }
   SpMatrix<double> R0() const { return model_.R0(); }
   SpMatrix<double> Psi() { return model_.Psi(fdaPDE::models::not_nan()); }
 
   // Setters
   void set_npc(std::size_t n) { model_.set_npc(n); }
+  void set_verbose(bool verbose) { model_.set_verbose(verbose); }
   void set_mass_lumping(bool mass_lumping) { model_.set_mass_lumping(mass_lumping); }
+  void set_iterative(bool iterative) { model_.set_iterative(iterative); }
+  void set_coefficients_position(bool coefficients_position) { model_.set_coefficients_position(coefficients_position); }
   void set_lambda_s(double lambdaS) { model_.setLambdaS(lambdaS); }
   void set_lambdas(std::vector<double> lambdas)
   {
@@ -109,8 +114,10 @@ RCPP_MODULE(FPCA_CS_Laplacian_2D_GeoStatNodes)
       .method("init_regularization", &FPCA_CS_Laplacian_2D_GeoStatNodes::init_regularization)
       .method("init_pde", &FPCA_CS_Laplacian_2D_GeoStatNodes::init_pde)
       // Getters
+      .method("W", &FPCA_CS_Laplacian_2D_GeoStatNodes::W)
       .method("loadings", &FPCA_CS_Laplacian_2D_GeoStatNodes::loadings)
       .method("scores", &FPCA_CS_Laplacian_2D_GeoStatNodes::scores)
+      .method("coefficients", &FPCA_CS_Laplacian_2D_GeoStatNodes::coefficients)
       .method("R0", &FPCA_CS_Laplacian_2D_GeoStatNodes::R0)
       .method("Psi", &FPCA_CS_Laplacian_2D_GeoStatNodes::Psi)
       // Setters
@@ -118,7 +125,10 @@ RCPP_MODULE(FPCA_CS_Laplacian_2D_GeoStatNodes)
       .method("set_lambdas", &FPCA_CS_Laplacian_2D_GeoStatNodes::set_lambdas)
       .method("set_npc", &FPCA_CS_Laplacian_2D_GeoStatNodes::set_npc)
       .method("set_observations", &FPCA_CS_Laplacian_2D_GeoStatNodes::set_observations)
+      .method("set_verbose", &FPCA_CS_Laplacian_2D_GeoStatNodes::set_verbose)
       .method("set_mass_lumping", &FPCA_CS_Laplacian_2D_GeoStatNodes::set_mass_lumping)
+      .method("set_iterative", &FPCA_CS_Laplacian_2D_GeoStatNodes::set_iterative)
+      .method("set_coefficients_position", &FPCA_CS_Laplacian_2D_GeoStatNodes::set_coefficients_position)
       // Solve method
       .method("solve", &FPCA_CS_Laplacian_2D_GeoStatNodes::solve);
 }
@@ -134,8 +144,10 @@ RCPP_MODULE(FPCA_CS_Laplacian_2D_GeoStatLocations)
       .method("init_pde", &FPCA_CS_Laplacian_2D_GeoStatLocations::init_pde)
       .method("init", &FPCA_CS_Laplacian_2D_GeoStatLocations::init)
       // Getters
+      .method("W", &FPCA_CS_Laplacian_2D_GeoStatLocations::W)
       .method("loadings", &FPCA_CS_Laplacian_2D_GeoStatLocations::loadings)
       .method("scores", &FPCA_CS_Laplacian_2D_GeoStatLocations::scores)
+      .method("coefficients", &FPCA_CS_Laplacian_2D_GeoStatLocations::coefficients)
       .method("R0", &FPCA_CS_Laplacian_2D_GeoStatLocations::R0)
       .method("Psi", &FPCA_CS_Laplacian_2D_GeoStatLocations::Psi)
       // Setters
@@ -144,7 +156,10 @@ RCPP_MODULE(FPCA_CS_Laplacian_2D_GeoStatLocations)
       .method("set_npc", &FPCA_CS_Laplacian_2D_GeoStatLocations::set_npc)
       .method("set_locations", &FPCA_CS_Laplacian_2D_GeoStatLocations::set_locations)
       .method("set_observations", &FPCA_CS_Laplacian_2D_GeoStatLocations::set_observations)
+      .method("set_verbose", &FPCA_CS_Laplacian_2D_GeoStatLocations::set_verbose)
       .method("set_mass_lumping", &FPCA_CS_Laplacian_2D_GeoStatLocations::set_mass_lumping)
+      .method("set_iterative", &FPCA_CS_Laplacian_2D_GeoStatLocations::set_iterative)
+      .method("set_coefficients_position", &FPCA_CS_Laplacian_2D_GeoStatLocations::set_coefficients_position)
       // Solve method
       .method("solve", &FPCA_CS_Laplacian_2D_GeoStatLocations::solve);
 }
@@ -159,13 +174,18 @@ RCPP_MODULE(FPCA_CS_Laplacian_3D_GeoStatNodes)
       .method("init_regularization", &FPCA_CS_Laplacian_3D_GeoStatNodes::init_regularization)
       .method("init_pde", &FPCA_CS_Laplacian_3D_GeoStatNodes::init_pde)
       // Getters
+      .method("W", &FPCA_CS_Laplacian_3D_GeoStatNodes::W)
       .method("loadings", &FPCA_CS_Laplacian_3D_GeoStatNodes::loadings)
       .method("scores", &FPCA_CS_Laplacian_3D_GeoStatNodes::scores)
+      .method("coefficients", &FPCA_CS_Laplacian_3D_GeoStatNodes::coefficients)
       .method("R0", &FPCA_CS_Laplacian_3D_GeoStatNodes::R0)
       // Setters
       .method("set_lambda_s", &FPCA_CS_Laplacian_3D_GeoStatNodes::set_lambda_s)
       .method("set_observations", &FPCA_CS_Laplacian_3D_GeoStatNodes::set_observations)
+      .method("set_verbose", &FPCA_CS_Laplacian_3D_GeoStatNodes::set_verbose)
       .method("set_mass_lumping", &FPCA_CS_Laplacian_3D_GeoStatNodes::set_mass_lumping)
+      .method("set_iterative", &FPCA_CS_Laplacian_3D_GeoStatNodes::set_iterative)
+      .method("set_coefficients_position", &FPCA_CS_Laplacian_3D_GeoStatNodes::set_coefficients_position)
       // Solve method
       .method("solve", &FPCA_CS_Laplacian_3D_GeoStatNodes::solve);
 }

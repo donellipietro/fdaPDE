@@ -59,8 +59,15 @@ void FPCA_CS<PDE, RegularizationType, SamplingDesign, lambda_selection_strategy>
     else
         f_n_norm = loadings_.col(i).norm();
 
-    W_.col(i) /= f_n_norm;
-    loadings_.col(i) /= f_n_norm;
+    if (coefficients_position_ != 2)
+    {
+        W_.col(i) /= f_n_norm;
+        loadings_.col(i) /= f_n_norm;
+    }
+    if (coefficients_position_ == 1)
+    {
+        scores_.col(i) *= f_n_norm;
+    }
 
     coefficients_.insert(i, i) = f_n_norm;
 
@@ -94,7 +101,9 @@ void FPCA_CS<PDE, RegularizationType, SamplingDesign, lambda_selection_strategy>
         if (verbose_)
             std::cout << "- RSVD (Iterative)" << std::endl;
 
-        RSVD rsvd(X, lambda()[0], 1, Psi(not_nan()), P_, verbose_);
+        const unsigned int rank = 1;
+
+        RSVD rsvd(X, lambda()[0], rank, Psi(not_nan()), P_, verbose_);
         rsvd.init();
         for (std::size_t i = 0; i < n_pc_; i++)
         {
@@ -110,7 +119,10 @@ void FPCA_CS<PDE, RegularizationType, SamplingDesign, lambda_selection_strategy>
             normalize_results_i(i);
 
             // Subtract computed PC from data
-            X -= coefficients_.coeff(i, i) * scores_.col(i) * loadings_.col(i).transpose();
+            if (coefficients_position_ == 0)
+                X -= coefficients_.coeff(i, i) * scores_.col(i) * loadings_.col(i).transpose();
+            else
+                X -= scores_.col(i) * loadings_.col(i).transpose();
         }
     }
     else
@@ -247,7 +259,10 @@ void FPCA_CS<PDE, RegularizationType, SamplingDesign, lambda_selection_strategy>
             normalize_results_i(i);
 
             // Subtract computed PC from data
-            data_.get<double>(OBSERVATIONS_BLK) -= coefficients_.coeff(i, i) * scores_.col(i) * loadings_.col(i).transpose();
+            if (coefficients_position_ == 0)
+                data_.get<double>(OBSERVATIONS_BLK) -= coefficients_.coeff(i, i) * scores_.col(i) * loadings_.col(i).transpose();
+            else
+                data_.get<double>(OBSERVATIONS_BLK) -= scores_.col(i) * loadings_.col(i).transpose();
         }
     }
     else
