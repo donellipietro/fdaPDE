@@ -14,10 +14,8 @@ public:
     const unsigned int &rank_;
 
     // Intermediate steps matrices
-    DMatrix<double> C_;
-    DMatrix<double> D_;
-    Eigen::LLT<DMatrix<double>> cholesky_;
-    Eigen::PartialPivLU<DMatrix<double>> invD_;
+    DMatrix<double> C1_;
+    DMatrix<double> DT1_;
 
     // Solutions
     DMatrix<double> H_;
@@ -51,16 +49,26 @@ public:
 
         if (verbose_)
             std::cout << "  - C matrix assembling" << std::endl;
-        C_ = Psi_.transpose() * Psi_ + lambda_ * P_;
+        DMatrix<double> C_{Psi_.transpose() * Psi_ + lambda_ * P_};
 
         if (verbose_)
             std::cout << "  - C matrix cholesky decomposition" << std::endl;
-        cholesky_.compute(C_);
-        D_ = cholesky_.matrixL();
+        Eigen::LLT<DMatrix<double>> cholesky;
+        cholesky.compute(C_);
+        DMatrix<double> D_{cholesky.matrixL()};
+
+        if (verbose_)
+            std::cout << "  - C matrix inversion" << std::endl;
+        C1_ = cholesky.solve(DMatrix<double>::Identity(K_, K_));
 
         if (verbose_)
             std::cout << "  - D matrix LU decomposition" << std::endl;
-        invD_.compute(D_);
+        Eigen::PartialPivLU<DMatrix<double>> invD;
+        invD.compute(D_);
+
+        if (verbose_)
+            std::cout << "  - D matrix inversion" << std::endl;
+        DT1_ = (invD.solve(DMatrix<double>::Identity(K_, K_))).transpose();
 
         // std::cout << "init" << std::endl;
 
@@ -73,7 +81,7 @@ public:
 
         if (verbose_)
             std::cout << "  - SVD" << std::endl;
-        Eigen::JacobiSVD<DMatrix<double>> svd(X_ * Psi_ * (invD_.solve(DMatrix<double>::Identity(K_, K_))).transpose(), Eigen::ComputeThinU | Eigen::ComputeThinV);
+        Eigen::JacobiSVD<DMatrix<double>> svd(X_ * Psi_ * DT1_, Eigen::ComputeThinU | Eigen::ComputeThinV);
 
         if (verbose_)
             std::cout << "  - Results, H" << std::endl;
@@ -81,7 +89,7 @@ public:
 
         if (verbose_)
             std::cout << "  - Results, W" << std::endl;
-        W_ = cholesky_.solve(DMatrix<double>::Identity(K_, K_)) * Psi_.transpose() * X_.transpose() * H_;
+        W_ = (H_.transpose() * X_ * Psi_ * C1_).transpose();
 
         // std::cout << "solve" << std::endl;
 
