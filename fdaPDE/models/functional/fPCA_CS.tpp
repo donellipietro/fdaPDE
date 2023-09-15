@@ -18,20 +18,22 @@ void FPCA_CS<PDE, RegularizationType, SamplingDesign, lambda_selection_strategy>
         if (verbose_)
             std::cout << "- Penalty matrix assembling (Mass Lumping)" << std::endl;
 
+        // Room for the solution
         SpMatrix<double> invR0;
         invR0.resize(K_, K_);
         invR0.reserve(K_);
 
-        // triplet list to fill sparse matrix
+        // Triplet list to fill sparse matrix
         std::vector<fdaPDE::Triplet<double>> tripletList;
         tripletList.reserve(K_);
-
         for (std::size_t i = 0; i < K_; ++i)
             tripletList.emplace_back(i, i, 1 / R0().col(i).sum());
-        // finalize construction
+
+        // Finalize construction
         invR0.setFromTriplets(tripletList.begin(), tripletList.end());
         invR0.makeCompressed();
 
+        // Penalty matrix
         P_ = R1() * invR0 * R1();
     }
     else
@@ -97,32 +99,31 @@ void FPCA_CS<PDE, RegularizationType, SamplingDesign, lambda_selection_strategy>
         // Data
         DMatrix<double> X = data().template get<double>(OBSERVATIONS_BLK);
 
-        // RSVD
         if (verbose_)
             std::cout << "- RSVD (Iterative)" << std::endl;
 
+        // RSVD initialization
         const unsigned int rank = 1;
+        RSVD rsvd(X, Psi(not_nan()), P_, verbose_);
+        rsvd.init(lambda()[0]);
 
-        RSVD rsvd(X, lambda()[0], rank, Psi(not_nan()), P_, verbose_);
-        rsvd.init();
         for (std::size_t i = 0; i < n_pc_; i++)
         {
 
             if (verbose_)
                 std::cout << "  Component " << i + 1 << ":" << std::endl;
 
-            rsvd.solve();
-
+            // Scores and loadings computation
+            rsvd.solve(1);
             W_.col(i) = rsvd.W().col(0);
             loadings_.col(i) = Psi(not_nan()) * W_.col(i);
             scores_.col(i) = rsvd.H().col(0);
-            normalize_results_i(i);
 
-            // Subtract computed PC from data
-            if (coefficients_position_ == 0)
-                X -= coefficients_.coeff(i, i) * scores_.col(i) * loadings_.col(i).transpose();
-            else
-                X -= scores_.col(i) * loadings_.col(i).transpose();
+            // Deflation
+            X -= scores_.col(i) * loadings_.col(i).transpose();
+
+            // Normalization
+            normalize_results_i(i);
         }
     }
     else
@@ -131,9 +132,12 @@ void FPCA_CS<PDE, RegularizationType, SamplingDesign, lambda_selection_strategy>
         if (verbose_)
             std::cout << "- RSVD (Monolithic)" << std::endl;
 
-        RSVD rsvd(data().template get<double>(OBSERVATIONS_BLK), lambda()[0], n_pc_, Psi(not_nan()), P_, verbose_);
-        rsvd.init();
-        rsvd.solve();
+        // RSVD initialization
+        RSVD rsvd(data().template get<double>(OBSERVATIONS_BLK), Psi(not_nan()), P_, verbose_);
+        rsvd.init(lambda()[0]);
+
+        // Scores and loadings computation
+        rsvd.solve(n_pc_);
         W_ = rsvd.W();
         loadings_ = Psi(not_nan()) * W_;
         scores_ = rsvd.H();
@@ -141,7 +145,6 @@ void FPCA_CS<PDE, RegularizationType, SamplingDesign, lambda_selection_strategy>
         // Normalization
         if (verbose_)
             std::cout << "- Scores and Loadings normalization" << std::endl;
-
         normalize_results();
     }
 
@@ -186,7 +189,7 @@ template <typename PDE, typename RegularizationType,
           typename SamplingDesign, typename lambda_selection_strategy>
 void FPCA_CS<PDE, RegularizationType, SamplingDesign, lambda_selection_strategy>::solve_(kcv_lambda_selection)
 {
-
+    /*
     // number of smoothing parameters
     const std::size_t n_lambda = n_smoothing_parameters<RegularizationType>::value;
 
@@ -340,6 +343,8 @@ void FPCA_CS<PDE, RegularizationType, SamplingDesign, lambda_selection_strategy>
     }
 
     return;
+
+    */
 }
 
 // finds solution to FPCA_CS problem, dispatch to solver depending on \lambda selection criterion

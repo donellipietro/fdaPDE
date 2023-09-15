@@ -8,10 +8,9 @@ class RSVD
 public:
     // Data
     const DMatrix<double> &X_;
-    const double &lambda_;
+    double lambda_;
     const SpMatrix<double> &Psi_;
     const SpMatrix<double> &P_;
-    const unsigned int &rank_;
 
     // Intermediate steps matrices
     DMatrix<double> C1_;
@@ -30,42 +29,48 @@ public:
     bool verbose_;
 
     // Constructor
-    RSVD(const DMatrix<double> &X, const double &lambda, const unsigned int &rank, const SpMatrix<double> &Psi, const SpMatrix<double> &P, bool verbose = false)
-        : X_(X), lambda_(lambda), rank_(rank), Psi_(Psi), P_(P), verbose_(verbose)
-    {
-        N_ = X_.rows();
-        S_ = X_.cols();
-        K_ = P_.rows();
-        H_.resize(N_, rank_);
-        W_.resize(K_, rank_);
-    };
+    RSVD(const DMatrix<double> &X, const SpMatrix<double> &Psi, const SpMatrix<double> &P, bool verbose = false)
+        : X_(X), Psi_(Psi), P_(P), verbose_(verbose){};
 
     // Methods
 
-    void init()
+    void init(double lambda)
     {
-
         // std::cout << "init" << std::endl;
 
-        if (verbose_)
-            std::cout << "  - C matrix assembling" << std::endl;
-        DMatrix<double> C_{Psi_.transpose() * Psi_ + lambda_ * P_};
+        // Set lambda
+        lambda_ = lambda;
 
+        // Dimensions
+        N_ = X_.rows();
+        S_ = X_.cols();
+        K_ = P_.rows();
+
+        // C matrix assembling
+        if (verbose_)
+            std::cout << "  - C matrix assembling "
+                      << "(lambda = " << lambda_ << ")" << std::endl;
+        DMatrix<double> C{Psi_.transpose() * Psi_ + lambda_ * P_};
+
+        // C matrix cholesky decomposition
         if (verbose_)
             std::cout << "  - C matrix cholesky decomposition" << std::endl;
         Eigen::LLT<DMatrix<double>> cholesky;
-        cholesky.compute(C_);
+        cholesky.compute(C);
         DMatrix<double> D_{cholesky.matrixL()};
 
+        // C matrix inversion
         if (verbose_)
             std::cout << "  - C matrix inversion" << std::endl;
         C1_ = cholesky.solve(DMatrix<double>::Identity(K_, K_));
 
+        // D matrix LU decomposition
         if (verbose_)
             std::cout << "  - D matrix LU decomposition" << std::endl;
         Eigen::PartialPivLU<DMatrix<double>> invD;
         invD.compute(D_);
 
+        // D matrix inversion
         if (verbose_)
             std::cout << "  - D matrix inversion" << std::endl;
         DT1_ = (invD.solve(DMatrix<double>::Identity(K_, K_))).transpose();
@@ -75,18 +80,27 @@ public:
         return;
     }
 
-    void solve()
+    void solve(unsigned int rank)
     {
         // std::cout << "solve" << std::endl;
 
         if (verbose_)
+            std::cout << "  - Rank is set to " << rank << std::endl;
+
+        H_.resize(N_, rank);
+        W_.resize(K_, rank);
+
+        // SVD
+        if (verbose_)
             std::cout << "  - SVD" << std::endl;
         Eigen::JacobiSVD<DMatrix<double>> svd(X_ * Psi_ * DT1_, Eigen::ComputeThinU | Eigen::ComputeThinV);
 
+        // Results, H
         if (verbose_)
             std::cout << "  - Results, H" << std::endl;
-        H_ = svd.matrixU().leftCols(rank_);
+        H_ = svd.matrixU().leftCols(rank);
 
+        // Results, W
         if (verbose_)
             std::cout << "  - Results, W" << std::endl;
         W_ = (H_.transpose() * X_ * Psi_ * C1_).transpose();
