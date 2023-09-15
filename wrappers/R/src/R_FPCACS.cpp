@@ -73,7 +73,7 @@ public:
   void set_verbose(bool verbose) { model_.set_verbose(verbose); }
   void set_mass_lumping(bool mass_lumping) { model_.set_mass_lumping(mass_lumping); }
   void set_iterative(bool iterative) { model_.set_iterative(iterative); }
-  void set_coefficients_position(bool coefficients_position) { model_.set_coefficients_position(coefficients_position); }
+  void set_coefficients_position(unsigned int coefficients_position) { model_.set_coefficients_position(coefficients_position); }
   void set_lambda_s(double lambdaS) { model_.setLambdaS(lambdaS); }
   void set_lambdas(std::vector<double> lambdas)
   {

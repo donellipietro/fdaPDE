@@ -87,7 +87,7 @@ namespace fdaPDE
             void set_verbose(bool verbose) { verbose_ = verbose; }
             void set_mass_lumping(bool mass_lumping) { mass_lumping_ = mass_lumping; }
             void set_iterative(bool iterative) { iterative_ = iterative; }
-            void set_coefficients_position(bool coefficients_position) { coefficients_position_ = coefficients_position; }
+            void set_coefficients_position(unsigned int coefficients_position) { coefficients_position_ = coefficients_position; }
 
             // methods
             void normalize_results_i(std::size_t i);
