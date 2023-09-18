@@ -10,8 +10,8 @@ using fdaPDE::core::FEM::PDE;
 using fdaPDE::core::FEM::SpaceVaryingAdvection;
 using fdaPDE::core::FEM::SpaceVaryingDiffusion;
 #include "core/MESH/Mesh.h"
-#include "../fdaPDE/models/functional/fSRPDE.h"
-using fdaPDE::models::FSRPDE;
+#include "../fdaPDE/models/functional/FRPDE.h"
+using fdaPDE::models::FRPDE;
 #include "../fdaPDE/models/SamplingDesign.h"
 
 #include "../utils/MeshLoader.h"
@@ -25,7 +25,7 @@ using fdaPDE::testing::almost_equal;
 #include <fstream>
 #include <filesystem>
 
-namespace Test_fSRPDE
+namespace Test_FRPDE
 {
     const static Eigen::IOFormat CSVFormat(Eigen::StreamPrecision, Eigen::DontAlignCols, ",", "\n");
 }
@@ -38,7 +38,7 @@ namespace Test_fSRPDE
    BC:           no
    order FE:     1
  */
-TEST(FSRPDE, Test1_Laplacian_NonParametric_GeostatisticalAtNodes)
+TEST(FRPDE, Test1_Laplacian_NonParametric_GeostatisticalAtNodes)
 {
     // define domain and regularizing PDE
     MeshLoader<Mesh2D<>> domain("unit_square");
@@ -47,14 +47,14 @@ TEST(FSRPDE, Test1_Laplacian_NonParametric_GeostatisticalAtNodes)
     PDE problem(domain.mesh, L, u); // definition of regularizing PDE
 
     // define statistical model
-    FSRPDE<decltype(problem), fdaPDE::models::GeoStatMeshNodes> model(problem);
+    FRPDE<decltype(problem), fdaPDE::models::GeoStatMeshNodes> model(problem);
 
     // set lambda
     double lambda = std::pow(0.1, 4);
     model.setLambdaS(lambda);
 
     // load data from .csv files
-    std::string test_directory = "data/models/FSRPDE/2D_test/";
+    std::string test_directory = "data/models/FRPDE/2D_test/";
     CSVReader<double> reader{};
     CSVFile<double> XFile; // observation file
     XFile = reader.parseFile(test_directory + "X.csv");
@@ -85,14 +85,14 @@ TEST(FSRPDE, Test1_Laplacian_NonParametric_GeostatisticalAtNodes)
     // std::ofstream nodesfile;
     // nodesfile.open(results_directory + "f.csv");
     // DMatrix<double> computedF = model.f();
-    // nodesfile << computedF.format(Test_fSRPDE::CSVFormat);
+    // nodesfile << computedF.format(Test_FRPDE::CSVFormat);
     // nodesfile.close();
 }
 
-TEST(FSRPDE, Test2_Surface_domain_at_locations)
+TEST(FRPDE, Test2_Surface_domain_at_locations)
 {
 
-    std::string test_directory = "data/models/FSRPDE/2.5D_test/";
+    std::string test_directory = "data/models/FRPDE/2.5D_test/";
     CSVReader<double> reader{};
 
     // define domain and regularizing PDE
@@ -102,7 +102,7 @@ TEST(FSRPDE, Test2_Surface_domain_at_locations)
     PDE problem(domain.mesh, L, u); // definition of regularizing PDE
 
     // define statistical model
-    FSRPDE<decltype(problem), fdaPDE::models::GeoStatLocations> model(problem);
+    FRPDE<decltype(problem), fdaPDE::models::GeoStatLocations> model(problem);
 
     // load locations from .csv files
     CSVFile<double> locsFile;
@@ -137,6 +137,6 @@ TEST(FSRPDE, Test2_Surface_domain_at_locations)
     // std::ofstream nodesfile;
     // nodesfile.open(results_directory + "f.csv");
     // DMatrix<double> computedF = model.f();
-    // nodesfile << computedF.format(Test_fSRPDE::CSVFormat);
+    // nodesfile << computedF.format(Test_FRPDE::CSVFormat);
     // nodesfile.close();
 }

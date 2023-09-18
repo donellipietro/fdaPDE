@@ -7,8 +7,8 @@
 #include "../ModelTraits.h"
 using fdaPDE::models::select_regularization_type;
 #include "FunctionalBase.h"
-#include "fSRPDE.h"
-using fdaPDE::models::FSRPDE;
+#include "FRPDE.h"
+using fdaPDE::models::FRPDE;
 
 namespace fdaPDE
 {
@@ -16,10 +16,10 @@ namespace fdaPDE
     {
 
         template <typename Model>
-        struct FSRPDE_smoother
+        struct FRPDE_smoother
         {
             typedef typename std::decay<Model>::type Model_;
-            using type = FSRPDE<typename model_traits<Model_>::PDE, typename model_traits<Model_>::sampling>;
+            using type = FRPDE<typename model_traits<Model_>::PDE, typename model_traits<Model_>::sampling>;
         };
 
         // base class for any *functional regression* fdaPDE model
@@ -36,7 +36,7 @@ namespace fdaPDE
             std::size_t K_; // number of basis
 
             // smoother
-            typedef typename FSRPDE_smoother<Model>::type SmootherType;
+            typedef typename FRPDE_smoother<Model>::type SmootherType;
             SmootherType smoother_;
 
             // version implemented in R

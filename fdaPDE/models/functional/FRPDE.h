@@ -1,5 +1,5 @@
-#ifndef __FSRPDE_H__
-#define __FSRPDE_H__
+#ifndef __FRPDE_H__
+#define __FRPDE_H__
 
 #include "../../core/utils/Symbols.h"
 #include "../regression/SRPDE.h"
@@ -12,13 +12,13 @@ namespace fdaPDE
 
         // wrapper to apply SRPDE to functional data
         template <typename PDE, typename SamplingDesign>
-        class FSRPDE
+        class FRPDE
         {
             // compile time checks
             static_assert(std::is_base_of<PDEBase, PDE>::value);
 
         private:
-            typedef FSRPDE<PDE, SamplingDesign> ModelType;
+            typedef FRPDE<PDE, SamplingDesign> ModelType;
             typedef SRPDE<PDE, SamplingDesign> SmootherType;
 
             // solver
@@ -38,14 +38,14 @@ namespace fdaPDE
 
         public:
             // constructor
-            FSRPDE() = default;
-            FSRPDE(const PDE &pde)
+            FRPDE() = default;
+            FRPDE(const PDE &pde)
             {
-                // std::cout << "initialization fSRPDE" << std::endl;
+                // std::cout << "initialization FRPDE" << std::endl;
 
                 setPDE(pde);
 
-                // std::cout << "initialization fSRPDE" << std::endl;
+                // std::cout << "initialization FRPDE" << std::endl;
             };
 
             // getters
@@ -193,7 +193,7 @@ namespace fdaPDE
         };
 
         template <typename PDE_, typename SamplingDesign_>
-        struct model_traits<FSRPDE<PDE_, SamplingDesign_>>
+        struct model_traits<FRPDE<PDE_, SamplingDesign_>>
         {
             typedef PDE_ PDE;
             typedef SpaceOnly regularization;
@@ -203,12 +203,12 @@ namespace fdaPDE
         };
 
         template <typename Model>
-        struct is_fsrpde
+        struct is_frpde
         {
-            static constexpr bool value = is_instance_of<Model, FSRPDE>::value;
+            static constexpr bool value = is_instance_of<Model, FRPDE>::value;
         };
 
     }
 }
 
-#endif // __FSRPDE_H__
+#endif // __FRPDE_H__

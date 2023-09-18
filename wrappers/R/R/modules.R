@@ -15,8 +15,8 @@ loadModule("FPCA_CS_Laplacian_2D_GeoStatNodes", TRUE)
 loadModule("FPCA_CS_Laplacian_2D_GeoStatLocations", TRUE)
 loadModule("FPCA_CS_Laplacian_3D_GeoStatNodes", TRUE)
 
-# fSRPDE
-loadModule("FSRPDE_Laplacian_2D_GeoStatNodes", TRUE)
-loadModule("FSRPDE_Laplacian_2D_GeoStatLocations", TRUE)
-loadModule("FSRPDE_Laplacian_Surface_GeoStatNodes", TRUE)
-loadModule("FSRPDE_Laplacian_Surface_GeoStatLocations", TRUE)
+# FRPDE
+loadModule("FRPDE_Laplacian_2D_GeoStatNodes", TRUE)
+loadModule("FRPDE_Laplacian_2D_GeoStatLocations", TRUE)
+loadModule("FRPDE_Laplacian_Surface_GeoStatNodes", TRUE)
+loadModule("FRPDE_Laplacian_Surface_GeoStatLocations", TRUE)
