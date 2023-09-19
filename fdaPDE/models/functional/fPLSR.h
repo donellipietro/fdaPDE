@@ -73,20 +73,24 @@ namespace fdaPDE
             // space-only constructor
             template <typename U = RegularizationType,
                       typename std::enable_if<std::is_same<U, SpaceOnly>::value, int>::type = 0>
-            FPLSR(const PDE &pde) : Base(pde){
-                                        // std::cout << "initialization fPLSR" << std::endl;
-                                    };
+            FPLSR(const PDE &pde) : Base(pde)
+            {
+                if (this->verbose_)
+                    std::cout << "- Initialization fPLSR" << std::endl;
+            };
             // space-time constructor
             template <typename U = RegularizationType,
                       typename std::enable_if<!std::is_same<U, SpaceOnly>::value, int>::type = 0>
-            FPLSR(const PDE &pde, const DVector<double> &time) : Base(pde, time){
-                                                                     // std::cout << "initialization fPLSR" << std::endl;
-                                                                 };
+            FPLSR(const PDE &pde, const DVector<double> &time) : Base(pde, time)
+            {
+                if (this->verbose_)
+                    std::cout << "- Initialization fPLSR" << std::endl;
+            };
 
             void init_model();    // initialize the model
             virtual void solve(); // compute latent components
 
-            // getters
+            // Getters
             const DMatrix<double> &F() const { return df_residuals_.template get<double>(OBSERVATIONS_BLK); }
             const DMatrix<double> &E() const { return df_residuals_.template get<double>(DESIGN_MATRIX_BLK); }
             const DMatrix<double> &W() const { return W_; }
@@ -97,7 +101,7 @@ namespace fdaPDE
             const SpMatrix<double> &PsiTPsi() const { return PsiTPsi_; }
             const fdaPDE::SparseLU<SpMatrix<double>> &invPsiTPsi() const { return invPsiTPsi_; }
 
-            // setters
+            // Setters
             void set_tolerance(double tol) { tol_ = tol; }
             void set_max_iterations(std::size_t max_iter) { max_iter_ = max_iter; }
             void set_H(std::size_t H) { H_ = H; }
@@ -135,9 +139,12 @@ namespace fdaPDE
                 lambda_smoothing_regression_ = lambda_smoothing_regression;
             }
 
-            // methods
+            // Methods
             DMatrix<double> reconstructed_field() const
             {
+                if (this->verbose_)
+                    std::cout << "- Computation of the recontructed field" << std::endl;
+
                 return (T() * C().transpose()).rowwise() + this->X_mean().transpose();
             }
 

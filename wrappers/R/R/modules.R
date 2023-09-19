@@ -20,3 +20,7 @@ loadModule("FRPDE_Laplacian_2D_GeoStatNodes", TRUE)
 loadModule("FRPDE_Laplacian_2D_GeoStatLocations", TRUE)
 loadModule("FRPDE_Laplacian_Surface_GeoStatNodes", TRUE)
 loadModule("FRPDE_Laplacian_Surface_GeoStatLocations", TRUE)
+
+# FPLSR
+loadModule("FPLSR_Laplacian_2D_GeoStatNodes", TRUE)
+loadModule("FPLSR_Laplacian_2D_GeoStatLocations", TRUE)

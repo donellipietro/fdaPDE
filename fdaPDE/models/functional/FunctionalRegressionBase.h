@@ -29,31 +29,34 @@ namespace fdaPDE
         protected:
             typedef FunctionalBase<Model> Base;
 
-            // problem dimensions
+            // Problem dimensions
             std::size_t L_; // number of responses
             std::size_t S_; // number of observation points
             std::size_t N_; // number of samples
             std::size_t K_; // number of basis
 
-            // smoother
+            // Smoother
             typedef typename FRPDE_smoother<Model>::type SmootherType;
             SmootherType smoother_;
 
-            // version implemented in R
+            // Version implemented in R
             bool full_functional_ = false;
 
-            // smoothing
+            // Smoothing
             bool smoothing_initialization_ = true;
             double lambda_smoothing_initialization_ = 1e-12;
 
-            // centering
+            // Centering
             bool center_;
             DVector<double> Y_mean_;
             DVector<double> X_mean_;
             BlockFrame<double, int> df_data_;
             BlockFrame<double, int> df_centered_;
 
-            // room for problem solution
+            // Options
+            bool verbose_ = false;
+
+            // Room for problem solution
             DMatrix<double> B_; // estimate of the coefficient functions (K_ x L_ matrix)
 
         public:
@@ -78,12 +81,14 @@ namespace fdaPDE
                           int>::type = 0>
             FunctionalRegressionBase(const PDE &pde) : Base(pde), smoother_(pde)
             {
-                // std::cout << "initialization FunctionalRegressionBase" << std::endl;
 
-                // smoother initialization
+                if (verbose_)
+                    std::cout << "- Initialization FunctionalRegressionBase" << std::endl;
+
+                // Smoother initialization
                 smoother_.setLambdaS(lambda_smoothing_initialization_);
-
-                // std::cout << "initialization FunctionalRegressionBase" << std::endl;
+                if (verbose_)
+                    smoother_.set_verbose(true);
             };
 
             // space-time constructor
@@ -99,17 +104,20 @@ namespace fdaPDE
             // copy constructor, copy only pde object (as a consequence also the problem domain)
             FunctionalRegressionBase(const FunctionalRegressionBase &rhs)
             {
-                // std::cout << "initialization FunctionalRegressionBase" << std::endl;
+                if (verbose_)
+                    std::cout << "- Initialization FunctionalRegressionBase" << std::endl;
 
                 pde_ = rhs.pde_;
-                // smoother initialization
+
+                // Smoother initialization
                 smoother_.setPDE(pde_);
                 smoother_.setLambdaS(lambda_smoothing_initialization_);
-
-                // std::cout << "initialization FunctionalRegressionBase" << std::endl;
+                if (verbose_)
+                    smoother_.set_verbose(true);
             }
 
-            // setters
+            // Setters
+            void set_verbose(bool verbose) { verbose_ = verbose; }
             void set_center(bool center) { center_ = center; }
             void set_smoothing(bool smoothing) { smoothing_initialization_ = smoothing; }
             void set_smoothing(bool smoothing, double lambda_smoothing_initialization)
@@ -122,7 +130,7 @@ namespace fdaPDE
                 }
             }
 
-            // getters
+            // Getters
             std::size_t q() const { return df_.hasBlock(DESIGN_MATRIX_BLK) ? df_.template get<double>(DESIGN_MATRIX_BLK).cols() : 0; }
             const DMatrix<double> &Y_original() const { return df_.template get<double>(OBSERVATIONS_BLK); }           // original responses
             const DMatrix<double> &Y_centered() const { return df_centered_.template get<double>(OBSERVATIONS_BLK); }  // centered responses
@@ -139,49 +147,52 @@ namespace fdaPDE
             void init_data()
             {
 
-                // add locations to smoother solver
+                if (verbose_)
+                    std::cout << "- Data initialization" << std::endl;
+
+                // Add locations to smoother solver
                 if constexpr (is_sampling_pointwise_at_locs<SmootherType>::value)
                 {
-                    // std::cout << "set spatial locations" << std::endl;
                     const DMatrix<double> locs = this->locs();
                     smoother_.set_spatial_locations(locs);
-                    // std::cout << "set spatial locations" << std::endl;
                 }
 
-                // centered data
-                // std::cout << "update to data" << std::endl;
+                // Data centering
                 Y_mean_ = Y_original().colwise().mean();
                 df_centered_.insert<double>(OBSERVATIONS_BLK, Y_original().rowwise() - Y_mean().transpose());
-                // std::cout << "update to data" << std::endl;
                 if (smoothing_initialization_)
                 {
-                    // std::cout << "lambda smoother: " << smoother_.lambdaS() << std::endl;
-                    // std::cout << "lambda required: " << lambda_smoothing_initialization_ << std::endl;
+                    if (verbose_)
+                        std::cout << "  - Data centering (smoothing with lambda = " << smoother_.lambdaS() << ")" << std::endl;
                     X_mean_ = smoother_.compute(X_original()).transpose();
                     const DVector<double> X_mean_at_locations = smoother_.fitted().transpose();
                     df_centered_.insert<double>(DESIGN_MATRIX_BLK, X_original().rowwise() - X_mean_at_locations.transpose());
                 }
                 else
                 {
+                    if (verbose_)
+                        std::cout << "  - Data centering (colwise mean)" << std::endl;
                     X_mean_ = X_original().colwise().mean();
                     df_centered_.insert<double>(DESIGN_MATRIX_BLK, X_original().rowwise() - X_mean_.transpose());
                 }
-                // std::cout << "update to data" << std::endl;
 
-                // dimensions
+                // Dimensions
                 L_ = Y().cols();
                 S_ = X().cols();
                 N_ = Y().rows();
                 K_ = n_basis();
 
-                // solution
+                // Room for the solution
                 B_.resize(K_, L_);
             }
 
-            // computes fitted values
+            // Fitted values computaion
             // \hat y = y_mean = X*Psi*B + y_mean
             DMatrix<double> fitted() const
             {
+                if (verbose_)
+                    std::cout << "- Fitted values computaion" << std::endl;
+
                 DMatrix<double> Y_hat(N_, L_);
                 if (full_functional_)
                     Y_hat = X() * R0() * B_;
@@ -193,10 +204,13 @@ namespace fdaPDE
                 return Y_hat;
             }
 
-            // compute prediction of model for a new unseen function:
+            // Computes the prediction of the model for a new unseen function:
             // \hat y_{n+1} = x_{n+1}^T*Psi*B + y_mean
-            DMatrix<double> predict(const DVector<double> &covs)
+            DMatrix<double> predict(const DVector<double> &covs) const
             {
+                if (verbose_)
+                    std::cout << "- Prediction" << std::endl;
+
                 DVector<double> X_new{covs};
                 if (center_)
                     X_new -= X_mean();
@@ -212,7 +226,7 @@ namespace fdaPDE
                 return Y_hat;
             }
 
-            // functional models' missing data logic
+            // Functional models' missing data logic
             void init_nan()
             {
                 /*
@@ -259,7 +273,7 @@ namespace fdaPDE
             }
         };
 
-        // trait to detect if a type is a functional regression model
+        // Trait to detect if a type is a functional regression model
         template <typename T>
         struct is_functional_regression_model
         {
