@@ -99,7 +99,7 @@ void FPLSR<PDE, RegularizationType, SamplingDesign, lambda_selection_strategy>::
 
     // Functional coefficients matrix computation
     if (this->verbose_)
-        std::cout << "    - Functional coefficients matrix computation" << std::endl;
+        std::cout << "- Functional coefficients matrix computation" << std::endl;
     if (this->full_functional_)
     {
         auto invAUX = (C_.transpose() * R0() * W_).partialPivLu();

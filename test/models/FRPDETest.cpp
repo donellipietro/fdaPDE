@@ -40,6 +40,8 @@ namespace Test_FRPDE
  */
 TEST(FRPDE, Test1_Laplacian_NonParametric_GeostatisticalAtNodes)
 {
+    bool VERBOSE = false;
+
     // define domain and regularizing PDE
     MeshLoader<Mesh2D<>> domain("unit_square");
     auto L = Laplacian();
@@ -52,6 +54,7 @@ TEST(FRPDE, Test1_Laplacian_NonParametric_GeostatisticalAtNodes)
     // set lambda
     double lambda = std::pow(0.1, 4);
     model.setLambdaS(lambda);
+    model.set_verbose(VERBOSE);
 
     // load data from .csv files
     std::string test_directory = "data/models/FRPDE/2D_test/";
@@ -91,6 +94,7 @@ TEST(FRPDE, Test1_Laplacian_NonParametric_GeostatisticalAtNodes)
 
 TEST(FRPDE, Test2_Surface_domain_at_locations)
 {
+    bool VERBOSE = false;
 
     std::string test_directory = "data/models/FRPDE/2.5D_test/";
     CSVReader<double> reader{};
@@ -113,6 +117,7 @@ TEST(FRPDE, Test2_Surface_domain_at_locations)
     // set the lamnda
     double lambda = std::pow(0.1, 2);
     model.setLambdaS(lambda);
+    model.set_verbose(VERBOSE);
 
     // load data from .csv files
     CSVFile<double> XFile; // observation file

@@ -10,42 +10,41 @@ namespace fdaPDE
     namespace models
     {
 
-        // wrapper to apply SRPDE to functional data
+        // Wrapper to apply SRPDE to functional data
         template <typename PDE, typename SamplingDesign>
         class FRPDE
         {
-            // compile time checks
+            // Compile time checks
             static_assert(std::is_base_of<PDEBase, PDE>::value);
 
         private:
             typedef FRPDE<PDE, SamplingDesign> ModelType;
             typedef SRPDE<PDE, SamplingDesign> SmootherType;
 
-            // solver
+            // Solver
             SmootherType solver_;
 
-            // problem dimensions
+            // Problem dimensions
             std::size_t S_; // number of observation points
             std::size_t N_; // number of samples
             std::size_t K_; // number of basis
 
-            // data
+            // Data
             BlockFrame<double, int> df_solver_;
             double b_norm_;
 
-            // problem solution
+            // Problem solution
             DMatrix<double> f_;
+
+            // Options
+            bool verbose_ = false;
 
         public:
             // constructor
             FRPDE() = default;
             FRPDE(const PDE &pde)
             {
-                // std::cout << "initialization FRPDE" << std::endl;
-
                 setPDE(pde);
-
-                // std::cout << "initialization FRPDE" << std::endl;
             };
 
             // getters
@@ -56,137 +55,116 @@ namespace fdaPDE
             // setters
             void setPDE(const PDE &pde)
             {
-                // std::cout << "set_pde" << std::endl;
-
+                // Set pde
                 solver_.setPDE(pde);
                 solver_.init_pde();
 
-                // number of mesh nodes
+                // Number of mesh nodes
                 K_ = solver_.n_basis();
 
-                // reserve space for solution
+                // Reserve space for solution
                 f_.resize(1, K_);
 
-                // std::cout << "set_pde" << std::endl;
+                return;
             }
+
+            void set_verbose(bool verbose) { verbose_ = verbose; }
 
             void setLambdaS(double lambda)
             {
-                // std::cout << "set_lambda" << std::endl;
-
                 solver_.setLambdaS(lambda);
-
-                // std::cout << "set_lambda" << std::endl;
+                return;
             }
 
             void set_spatial_locations(const DMatrix<double> &locs)
             {
-                // std::cout << "set_locations" << std::endl;
-
                 solver_.set_spatial_locations(locs);
-
-                // std::cout << "set_locations" << std::endl;
+                return;
             }
 
             void setData(const BlockFrame<double, int> &df)
             {
-                // std::cout << "set_data" << std::endl;
-
-                // unpack data
+                // Unpack data
                 const auto &X = df.get<double>(OBSERVATIONS_BLK);
                 const auto &b = df.get<double>(DESIGN_MATRIX_BLK);
 
+                // Set data
                 setData(X, b);
 
-                // std::cout << "set_data" << std::endl;
+                return;
             }
 
             void setData(const DMatrix<double> &X)
             {
-                // std::cout << "set_data" << std::endl;
-
-                // dimensions
+                // Dimensions
                 N_ = X.rows();
                 S_ = X.cols();
 
-                // covariates norm (in this case b is assumed to be a vector of ones)
+                // Covariates norm (in this case b is assumed to be a vector of ones)
                 b_norm_ = std::sqrt(N_);
 
-                // solver's data
+                // Solver's data
                 df_solver_.insert<double>(OBSERVATIONS_BLK, X.colwise().sum().transpose() / b_norm_);
 
-                // std::cout << "set_data" << std::endl;
+                return;
             }
 
             void setData(const DMatrix<double> &X, const DVector<double> &b)
             {
-
-                // std::cout << "set_data" << std::endl;
-
-                // dimensions
+                // Dimensions
                 N_ = X.rows();
                 S_ = X.cols();
 
-                // covariates norm
+                // Covariates norm
                 b_norm_ = b.norm();
 
-                // solver's data
+                // Solver's data
                 df_solver_.insert<double>(OBSERVATIONS_BLK, X.transpose() * b / b_norm_);
 
-                // std::cout << "set_data" << std::endl;
+                return;
             }
 
             void init()
             {
-                // std::cout << "init" << std::endl;
 
-                // initialization of the solver
+                if (verbose_)
+                    std::cout << "- Initialization SR-PDE solver" << std::endl;
+
+                // Initialization of the solver
                 solver_.setData(df_solver_);
-                // std::cout << "regularization" << std::endl;
                 solver_.init_regularization();
-                // std::cout << "regularization" << std::endl;
-                // std::cout << "sampling" << std::endl;
                 solver_.init_sampling();
-                // std::cout << "sampling" << std::endl;
-                // std::cout << "init model" << std::endl;
                 solver_.init_model();
-                // std::cout << "init model" << std::endl;
 
-                // std::cout << "init" << std::endl;
+                return;
             }
 
             // methods
             void solve()
             {
-                // std::cout << "solve" << std::endl;
+                if (verbose_)
+                    std::cout << "- Solve FR-PDE problem" << std::endl;
 
                 solver_.solve();
                 f_ = solver_.f().transpose() / (b_norm_);
 
-                // std::cout << "solve" << std::endl;
+                return;
             }
 
             DMatrix<double> compute(const DMatrix<double> &X, const DVector<double> &b)
             {
-                // std::cout << "compute" << std::endl;
-
                 setData(X, b);
                 init();
                 solve();
-                return f_;
 
-                // std::cout << "compute" << std::endl;
+                return f_;
             }
 
             DMatrix<double> compute(const DMatrix<double> &X)
             {
-                // std::cout << "compute" << std::endl;
-
                 setData(X);
                 init();
                 solve();
-
-                // std::cout << "compute" << std::endl;
 
                 return f_;
             }

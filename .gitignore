@@ -147,10 +147,10 @@
 !test/data/models/FPCA/2D_test3/
 !test/data/models/FPCA/2D_test3/*
 !test/data/PDEs/*.mtx
-!test/data/models/FSRPDE/
-!test/data/models/FSRPDE/*
-!test/data/models/FSRPDE/2D_test/
-!test/data/models/FSRPDE/2D_test/*
+!test/data/models/FRPDE/
+!test/data/models/FRPDE/*
+!test/data/models/FRPDE/2D_test/
+!test/data/models/FRPDE/2D_test/*
 !test/data/models/FPLSR/
 !test/data/models/FPLSR/*
 !test/data/models/FPLSR/2D_test/
