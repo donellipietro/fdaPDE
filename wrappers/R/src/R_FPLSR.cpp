@@ -45,10 +45,7 @@ protected:
 public:
     // Constructor
     R_FPLSR(const RegularizingPDE_ &regularization)
-        : regularization_(regularization)
-    {
-        model_.setPDE(regularization_.pde());
-    };
+        : regularization_(regularization), model_(regularization_.pde()){};
 
     // Initializations
     void init_pde() { model_.init_pde(); }

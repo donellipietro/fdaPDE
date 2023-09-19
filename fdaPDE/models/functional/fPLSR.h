@@ -73,19 +73,11 @@ namespace fdaPDE
             // space-only constructor
             template <typename U = RegularizationType,
                       typename std::enable_if<std::is_same<U, SpaceOnly>::value, int>::type = 0>
-            FPLSR(const PDE &pde) : Base(pde)
-            {
-                if (this->verbose_)
-                    std::cout << "- Initialization fPLSR" << std::endl;
-            };
+            FPLSR(const PDE &pde) : Base(pde){};
             // space-time constructor
             template <typename U = RegularizationType,
                       typename std::enable_if<!std::is_same<U, SpaceOnly>::value, int>::type = 0>
-            FPLSR(const PDE &pde, const DVector<double> &time) : Base(pde, time)
-            {
-                if (this->verbose_)
-                    std::cout << "- Initialization fPLSR" << std::endl;
-            };
+            FPLSR(const PDE &pde, const DVector<double> &time) : Base(pde, time){};
 
             void init_model();    // initialize the model
             virtual void solve(); // compute latent components

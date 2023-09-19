@@ -81,14 +81,8 @@ namespace fdaPDE
                           int>::type = 0>
             FunctionalRegressionBase(const PDE &pde) : Base(pde), smoother_(pde)
             {
-
-                if (verbose_)
-                    std::cout << "- Initialization FunctionalRegressionBase" << std::endl;
-
                 // Smoother initialization
                 smoother_.setLambdaS(lambda_smoothing_initialization_);
-                if (verbose_)
-                    smoother_.set_verbose(true);
             };
 
             // space-time constructor
@@ -104,20 +98,19 @@ namespace fdaPDE
             // copy constructor, copy only pde object (as a consequence also the problem domain)
             FunctionalRegressionBase(const FunctionalRegressionBase &rhs)
             {
-                if (verbose_)
-                    std::cout << "- Initialization FunctionalRegressionBase" << std::endl;
-
                 pde_ = rhs.pde_;
 
                 // Smoother initialization
                 smoother_.setPDE(pde_);
                 smoother_.setLambdaS(lambda_smoothing_initialization_);
-                if (verbose_)
-                    smoother_.set_verbose(true);
             }
 
             // Setters
-            void set_verbose(bool verbose) { verbose_ = verbose; }
+            void set_verbose(bool verbose)
+            {
+                verbose_ = verbose;
+                smoother_.set_verbose(verbose);
+            }
             void set_center(bool center) { center_ = center; }
             void set_smoothing(bool smoothing) { smoothing_initialization_ = smoothing; }
             void set_smoothing(bool smoothing, double lambda_smoothing_initialization)

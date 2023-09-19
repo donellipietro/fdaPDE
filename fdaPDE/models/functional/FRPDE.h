@@ -73,12 +73,14 @@ namespace fdaPDE
             void setLambdaS(double lambda)
             {
                 solver_.setLambdaS(lambda);
+
                 return;
             }
 
             void set_spatial_locations(const DMatrix<double> &locs)
             {
                 solver_.set_spatial_locations(locs);
+
                 return;
             }
 
