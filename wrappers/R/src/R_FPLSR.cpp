@@ -116,9 +116,6 @@ public:
     }
 };
 
-// fPLSR Closed Solution Rcpp module
-typedef R_FPLSR<Laplacian_2D_Order1, fdaPDE::models::GeoStatMeshNodes> FPLSR_Laplacian_2D_GeoStatNodes;
-
 // RCPP modules for R_FPLSR
 
 // Laplacian_2D_Order1, locations == nodes

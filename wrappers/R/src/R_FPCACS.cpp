@@ -102,9 +102,9 @@ public:
 };
 
 // fPCA Closed Solution Rcpp module
-typedef R_FPCA_CS<Laplacian_2D_Order1, fdaPDE::models::GeoStatMeshNodes> FPCA_CS_Laplacian_2D_GeoStatNodes;
 
 // Locations == Nodes
+typedef R_FPCA_CS<Laplacian_2D_Order1, fdaPDE::models::GeoStatMeshNodes> FPCA_CS_Laplacian_2D_GeoStatNodes;
 RCPP_MODULE(FPCA_CS_Laplacian_2D_GeoStatNodes)
 {
   Rcpp::class_<FPCA_CS_Laplacian_2D_GeoStatNodes>("FPCA_CS_Laplacian_2D_GeoStatNodes")
