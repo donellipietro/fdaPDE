@@ -143,30 +143,40 @@ namespace fdaPDE
                 if (verbose_)
                     std::cout << "- Data initialization" << std::endl;
 
-                // Add locations to smoother solver
-                if constexpr (is_sampling_pointwise_at_locs<SmootherType>::value)
-                {
-                    const DMatrix<double> locs = this->locs();
-                    smoother_.set_spatial_locations(locs);
-                }
-
-                // Data centering
+                // Data centering (Y)
                 Y_mean_ = Y_original().colwise().mean();
                 df_centered_.insert<double>(OBSERVATIONS_BLK, Y_original().rowwise() - Y_mean().transpose());
-                if (smoothing_initialization_)
+
+                // Data centering (X)
+                if constexpr (is_sampling_pointwise_at_locs<SmootherType>::value)
                 {
+                    // Add locations to smoother solver
+                    const DMatrix<double> locs = this->locs();
+                    smoother_.set_spatial_locations(locs);
+
                     if (verbose_)
-                        std::cout << "  - Data centering (smoothing with lambda = " << smoother_.lambdaS() << ")" << std::endl;
+                        std::cout << "  - Data centering (forced, smoothing with lambda = " << smoother_.lambdaS() << ")" << std::endl;
                     X_mean_ = smoother_.compute(X_original()).transpose();
                     const DVector<double> X_mean_at_locations = smoother_.fitted().transpose();
                     df_centered_.insert<double>(DESIGN_MATRIX_BLK, X_original().rowwise() - X_mean_at_locations.transpose());
                 }
                 else
                 {
-                    if (verbose_)
-                        std::cout << "  - Data centering (colwise mean)" << std::endl;
-                    X_mean_ = X_original().colwise().mean();
-                    df_centered_.insert<double>(DESIGN_MATRIX_BLK, X_original().rowwise() - X_mean_.transpose());
+                    if (smoothing_initialization_)
+                    {
+                        if (verbose_)
+                            std::cout << "  - Data centering (smoothing with lambda = " << smoother_.lambdaS() << ")" << std::endl;
+                        X_mean_ = smoother_.compute(X_original()).transpose();
+                        const DVector<double> X_mean_at_locations = smoother_.fitted().transpose();
+                        df_centered_.insert<double>(DESIGN_MATRIX_BLK, X_original().rowwise() - X_mean_at_locations.transpose());
+                    }
+                    else
+                    {
+                        if (verbose_)
+                            std::cout << "  - Data centering (colwise mean)" << std::endl;
+                        X_mean_ = X_original().colwise().mean();
+                        df_centered_.insert<double>(DESIGN_MATRIX_BLK, X_original().rowwise() - X_mean_.transpose());
+                    }
                 }
 
                 // Dimensions
