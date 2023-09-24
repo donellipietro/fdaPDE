@@ -2,4 +2,4 @@
 CXX_STD=CXX17
 ## include fdaPDE library in PATH and set compiler flags
 ## PKG_CXXFLAGS=-Wno-ignored-attributes -I%cd%/../../../ -O3 -march=native -std=c++17
-PKG_CXXFLAGS=-Wno-ignored-attributes -I"C:/Users/pietr/OneDrive/Documenti/thesis/fdaPDE" -O3 -march=native -std=c++17
+PKG_CXXFLAGS=-Wno-ignored-attributes -I"../../../" -O3 -march=native -std=c++17
