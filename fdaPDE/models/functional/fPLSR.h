@@ -20,45 +20,44 @@ namespace fdaPDE
     namespace models
     {
 
-        // base class for any FPCA model
         template <typename PDE, typename RegularizationType, typename SamplingDesign, typename lambda_selection_strategy>
         class FPLSR : public FunctionalRegressionBase<FPLSR<PDE, RegularizationType, SamplingDesign, lambda_selection_strategy>>
         {
-            // compile time checks
+            // Compile time checks
             static_assert(std::is_base_of<PDEBase, PDE>::value);
 
         private:
             typedef FPLSR<PDE, RegularizationType, SamplingDesign, lambda_selection_strategy> ModelType;
             typedef FunctionalRegressionBase<ModelType> Base;
 
-            // parameters used as stopping criterion by FPIREM algorithm
+            // Parameters used as stopping criterion by ProfilingEstimation algorithm
             std::size_t max_iter_ = 20; // maximum number of iterations before forced stop
             double tol_ = 1e-2;         // tolerance on |Jnew - Jold| used as convergence criterion
 
-            // default number of latent components
+            // Default number of latent components
             std::size_t H_ = 3;
 
-            // smoothing
+            // Smoothing
             bool smoothing_regression_ = true;
             double lambda_smoothing_regression_ = 1e-12;
 
-            // spatial matrices
+            // Spatial matrices
             SpMatrix<double> PsiTPsi_{};
             fdaPDE::SparseLU<SpMatrix<double>> invPsiTPsi_;
 
-            // problem solution
+            // Problem solution
             DMatrix<double> W_; // directions in X-spce
             DMatrix<double> V_; // directions in Y-space
             DMatrix<double> T_; // latent components
             DMatrix<double> C_; // X components
             DMatrix<double> D_; // Y components
 
-            // residuals
+            // Residuals
             BlockFrame<double, int> df_residuals_; // (OBSERVATIONS_BLK): F, (DESIGN_MATRIX_BLK): E
             DMatrix<double> &F() { return df_residuals_.template get<double>(OBSERVATIONS_BLK); }
             DMatrix<double> &E() { return df_residuals_.template get<double>(DESIGN_MATRIX_BLK); }
 
-            // tag dispatched private methods for computation of PCs
+            // Tag dispatched private methods for computation of PCs
             void solve_(fixed_lambda);
             void solve_(gcv_lambda_selection);
             void solve_(kcv_lambda_selection);
@@ -68,16 +67,18 @@ namespace fdaPDE
             using Base::lambda;
             using Base::lambdas;
 
-            // constructor
+            // Constructor
             FPLSR() = default;
-            // space-only constructor
+            // Space-only constructor
             template <typename U = RegularizationType,
                       typename std::enable_if<std::is_same<U, SpaceOnly>::value, int>::type = 0>
             FPLSR(const PDE &pde) : Base(pde){};
-            // space-time constructor
+            // Space-time constructor
+            /*
             template <typename U = RegularizationType,
                       typename std::enable_if<!std::is_same<U, SpaceOnly>::value, int>::type = 0>
             FPLSR(const PDE &pde, const DVector<double> &time) : Base(pde, time){};
+            */
 
             void init_model();    // initialize the model
             virtual void solve(); // compute latent components
@@ -165,7 +166,6 @@ namespace fdaPDE
             static constexpr SolverType solver = SolverType::Monolithic;
             static constexpr int n_lambda = 2;
         };
-
         */
 
 #include "fPLSR.tpp"
