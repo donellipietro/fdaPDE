@@ -5,7 +5,7 @@
 #include "../../calibration/GCV.h"
 using fdaPDE::calibration::GCV;
 using fdaPDE::calibration::StochasticEDF;
-#include "../fdaPDE/core/OPT/optimizers/GridOptimizer.h"
+#include "../../core/OPT/optimizers/GridOptimizer.h"
 using fdaPDE::core::OPT::GridOptimizer;
 #include "../regression/SRPDE.h"
 using fdaPDE::models::SRPDE;
