@@ -92,6 +92,65 @@ TEST(FRPDE, Test1_Laplacian_NonParametric_GeostatisticalAtNodes)
     // nodesfile.close();
 }
 
+/* test 2
+   domain:       unit square [0,1] x [0,1]
+   sampling:     locations = nodes
+   penalization: simple laplacian
+   covariates:   no
+   BC:           no
+   order FE:     1
+   lambda selevtion: GCV
+ */
+TEST(FRPDE, Test1_Laplacian_NonParametric_GeostatisticalAtNodes_GCV)
+{
+    bool VERBOSE = false;
+
+    // define domain and regularizing PDE
+    MeshLoader<Mesh2D<>> domain("unit_square");
+    auto L = Laplacian();
+    DMatrix<double> u = DMatrix<double>::Zero(domain.mesh.elements() * 3, 1);
+    PDE problem(domain.mesh, L, u); // definition of regularizing PDE
+
+    // define statistical model
+    FRPDE<decltype(problem), fdaPDE::models::GeoStatMeshNodes> model(problem);
+
+    // set lambda
+    double lambda = std::pow(0.1, 4);
+    model.setLambdaS(lambda);
+    model.set_verbose(VERBOSE);
+
+    // load data from .csv files
+    std::string test_directory = "data/models/FRPDE/2D_test/";
+    CSVReader<double> reader{};
+    CSVFile<double> XFile; // observation file
+    XFile = reader.parseFile(test_directory + "X.csv");
+    DMatrix<double> X = XFile.toEigen();
+    CSVFile<double> bFile; // observation file
+    bFile = reader.parseFile(test_directory + "b.csv");
+    DMatrix<double> b = bFile.toEigen();
+
+    // lambdas
+    std::vector<SVector<1>> lambdas;
+    for (double x = -6.0; x <= 0.0; x += 0.5)
+        lambdas.push_back(SVector<1>(std::pow(10, x)));
+
+    model.tune_and_compute(X, b, lambdas);
+
+    //  **  export results  ** //
+
+    // std::string results_directory = test_directory + "results/";
+
+    // if (!std::filesystem::exists(results_directory))
+    //     std::filesystem::create_directory(results_directory);
+
+    // std::ofstream nodesfile;
+    // nodesfile.open(results_directory + "f.csv");
+    // DMatrix<double> computedF = model.f();
+    // nodesfile << computedF.format(Test_FRPDE::CSVFormat);
+    // nodesfile.close();
+}
+
+/*
 TEST(FRPDE, Test2_Surface_domain_at_locations)
 {
     bool VERBOSE = false;
@@ -145,3 +204,4 @@ TEST(FRPDE, Test2_Surface_domain_at_locations)
     // nodesfile << computedF.format(Test_FRPDE::CSVFormat);
     // nodesfile.close();
 }
+*/
