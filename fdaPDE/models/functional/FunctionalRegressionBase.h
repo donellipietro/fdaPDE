@@ -44,7 +44,7 @@ namespace fdaPDE
 
             // Smoothing
             bool smoothing_initialization_ = true;
-            double lambda_smoothing_initialization_ = 1e-12;
+            std::vector<SVector<1>> lambdas_smoothing_initialization_{SVector<1>{1e-12}};
 
             // Centering
             bool center_;
@@ -79,11 +79,7 @@ namespace fdaPDE
                       typename std::enable_if<
                           std::is_same<typename model_traits<U>::regularization, SpaceOnly>::value,
                           int>::type = 0>
-            FunctionalRegressionBase(const PDE &pde) : Base(pde), smoother_(pde)
-            {
-                // Smoother initialization
-                smoother_.setLambdaS(lambda_smoothing_initialization_);
-            };
+            FunctionalRegressionBase(const PDE &pde) : Base(pde), smoother_(pde){};
 
             // space-time constructor
             /*
@@ -102,7 +98,6 @@ namespace fdaPDE
 
                 // Smoother initialization
                 smoother_.setPDE(pde_);
-                smoother_.setLambdaS(lambda_smoothing_initialization_);
             }
 
             // Setters
@@ -112,15 +107,11 @@ namespace fdaPDE
                 smoother_.set_verbose(verbose);
             }
             void set_center(bool center) { center_ = center; }
-            void set_smoothing(bool smoothing) { smoothing_initialization_ = smoothing; }
-            void set_smoothing(bool smoothing, double lambda_smoothing_initialization)
+            void set_smoothing_initialization(bool smoothing) { smoothing_initialization_ = smoothing; }
+            void set_smoothing_initialization(bool smoothing, std::vector<SVector<1>> lambdas_smoothing_initialization)
             {
                 smoothing_initialization_ = smoothing;
-                if (smoother_.lambdaS() != lambda_smoothing_initialization)
-                {
-                    lambda_smoothing_initialization_ = lambda_smoothing_initialization;
-                    smoother_.setLambdaS(lambda_smoothing_initialization_);
-                }
+                lambdas_smoothing_initialization_ = lambdas_smoothing_initialization;
             }
 
             // Getters
@@ -155,8 +146,8 @@ namespace fdaPDE
                     smoother_.set_spatial_locations(locs);
 
                     if (verbose_)
-                        std::cout << "  - Data centering (forced, smoothing with lambda = " << smoother_.lambdaS() << ")" << std::endl;
-                    X_mean_ = smoother_.compute(X_original()).transpose();
+                        std::cout << "  - Data centering (forced)" << std::endl;
+                    X_mean_ = smoother_.tune_and_compute(X_original(), lambdas_smoothing_initialization_).transpose();
                     const DVector<double> X_mean_at_locations = smoother_.fitted().transpose();
                     df_centered_.insert<double>(DESIGN_MATRIX_BLK, X_original().rowwise() - X_mean_at_locations.transpose());
                 }
@@ -165,8 +156,8 @@ namespace fdaPDE
                     if (smoothing_initialization_)
                     {
                         if (verbose_)
-                            std::cout << "  - Data centering (smoothing with lambda = " << smoother_.lambdaS() << ")" << std::endl;
-                        X_mean_ = smoother_.compute(X_original()).transpose();
+                            std::cout << "  - Data centering" << std::endl;
+                        X_mean_ = smoother_.tune_and_compute(X_original(), lambdas_smoothing_initialization_).transpose();
                         const DVector<double> X_mean_at_locations = smoother_.fitted().transpose();
                         df_centered_.insert<double>(DESIGN_MATRIX_BLK, X_original().rowwise() - X_mean_at_locations.transpose());
                     }

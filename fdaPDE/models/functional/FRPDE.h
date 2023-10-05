@@ -181,23 +181,29 @@ namespace fdaPDE
             SVector<1> tune(std::vector<SVector<1>> &lambdas)
             {
 
-                if (verbose_)
+                if (lambdas.size() > 1)
                 {
-                    std::cout << "- Tuning on: ";
-                    for (auto lambda : lambdas)
-                        std::cout << lambda << " ";
-                    std::cout << std::endl;
+
+                    if (verbose_)
+                    {
+                        std::cout << "- Tuning on: ";
+                        for (auto lambda : lambdas)
+                            std::cout << lambda << " ";
+                        std::cout << std::endl;
+                    }
+
+                    std::size_t seed = 476813;
+                    GCV<decltype(solver_), StochasticEDF<decltype(solver_)>> gcv(solver_, 1000, seed);
+
+                    GridOptimizer<1> opt;
+                    ScalarField<1, decltype(gcv)> obj(gcv);
+                    opt.optimize(obj, lambdas); // optimize gcv field
+                    SVector<1> best_lambda = opt.optimum();
+
+                    return best_lambda;
                 }
 
-                std::size_t seed = 476813;
-                GCV<decltype(solver_), StochasticEDF<decltype(solver_)>> gcv(solver_, 1000, seed);
-
-                GridOptimizer<1> opt;
-                ScalarField<1, decltype(gcv)> obj(gcv);
-                opt.optimize(obj, lambdas); // optimize gcv field
-                SVector<1> best_lambda = opt.optimum();
-
-                return best_lambda;
+                return lambdas.front();
             }
 
             SVector<1> tuning(const DMatrix<double> &X, const DVector<double> &b, std::vector<SVector<1>> &lambdas)
@@ -224,6 +230,7 @@ namespace fdaPDE
                     std::cout << "- Best lambda: " << best_lambda << std::endl;
 
                 setLambdaS(best_lambda);
+                solver_.init_model();
                 solve();
 
                 return f_;
@@ -237,6 +244,7 @@ namespace fdaPDE
                     std::cout << "- Best lambda: " << best_lambda << std::endl;
 
                 setLambdaS(best_lambda);
+                solver_.init_model();
                 solve();
 
                 return f_;

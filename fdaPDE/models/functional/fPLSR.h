@@ -39,7 +39,7 @@ namespace fdaPDE
 
             // Smoothing
             bool smoothing_regression_ = true;
-            double lambda_smoothing_regression_ = 1e-12;
+            std::vector<SVector<1>> lambdas_smoothing_regression_ = {SVector<1>{1e-12}};
 
             // Spatial matrices
             SpMatrix<double> PsiTPsi_{};
@@ -99,37 +99,14 @@ namespace fdaPDE
             void set_max_iterations(std::size_t max_iter) { max_iter_ = max_iter; }
             void set_H(std::size_t H) { H_ = H; }
             void set_full_functional(bool full_functional) { this->full_functional_ = full_functional; }
-            void set_smoothing(bool smoothing)
+            void set_smoothing_regression(bool smoothing_regression)
             {
-                this->smoothing_initialization_ = smoothing;
-                smoothing_regression_ = smoothing;
-            }
-            void set_smoothing(bool smoothing, double lambda_smoothing)
-            {
-                this->smoothing_initialization_ = smoothing;
-                if (this->smoother_.lambdaS() != lambda_smoothing)
-                {
-                    this->lambda_smoothing_initialization_ = lambda_smoothing;
-                    this->smoother_.setLambdaS(lambda_smoothing);
-                }
-                smoothing_regression_ = smoothing;
-                lambda_smoothing_regression_ = lambda_smoothing;
-            }
-            void set_smoothing(bool smoothing_initialization, bool smoothing_regression)
-            {
-                this->smoothing_initialization_ = smoothing_initialization;
                 smoothing_regression_ = smoothing_regression;
             }
-            void set_smoothing(bool smoothing_initialization, bool smoothing_regression, double lambda_smoothing_initialization, double lambda_smoothing_regression)
+            void set_smoothing_regression(bool smoothing_regression, std::vector<SVector<1>> lambdas_smoothing_regression)
             {
-                this->smoothing_initialization_ = smoothing_initialization;
-                if (this->smoother_.lambdaS() != lambda_smoothing_initialization)
-                {
-                    this->lambda_smoothing_initialization_ = lambda_smoothing_initialization;
-                    this->smoother_.setLambdaS(lambda_smoothing_initialization);
-                }
                 smoothing_regression_ = smoothing_regression;
-                lambda_smoothing_regression_ = lambda_smoothing_regression;
+                lambdas_smoothing_regression_ = lambdas_smoothing_regression;
             }
 
             // Methods

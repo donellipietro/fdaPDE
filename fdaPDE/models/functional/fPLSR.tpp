@@ -37,17 +37,20 @@ void FPLSR<PDE, RegularizationType, SamplingDesign, lambda_selection_strategy>::
     // Define internal solver
     ProfilingEstimation<decltype(*this)> pe(*this, tol_, max_iter_);
 
-    // Set smoother smoothing parameter
-    if (this->smoother_.lambdaS() != lambda_smoothing_regression_)
-    {
-        if (this->verbose_)
-            std::cout << "- Smoother setted with lambda = " << lambda_smoothing_regression_ << std::endl;
-        this->smoother_.setLambdaS(lambda_smoothing_regression_);
-    }
-
     // Solver's data
     BlockFrame<double, int> M;
     M.insert<double>(OBSERVATIONS_BLK, DMatrix<double>(this->L_, this->S_));
+
+    // wrap GCV into a ScalarField accepted by OPT module
+    const std::size_t n_lambda = n_smoothing_parameters<RegularizationType>::value;
+    ScalarField<n_lambda> f;
+    f = [&pe, &M](const SVector<n_lambda> &p) -> double
+    {
+        // find vectors s,f minimizing \norm_F{Y - s^T*f}^2 + (s^T*s)*P(f) fixed \lambda = p
+        pe.compute(M, p);
+        return pe.gcv(); // return GCV at convergence
+    };
+    GridOptimizer<n_lambda> opt; // optimization algorithm
 
     if (this->verbose_)
         std::cout << "- Latent components computation" << std::endl;
@@ -57,13 +60,27 @@ void FPLSR<PDE, RegularizationType, SamplingDesign, lambda_selection_strategy>::
     {
 
         if (this->verbose_)
-            std::cout << "  - Component " << h + 1 << ", lambda = " << lambda() << std::endl;
+            std::cout << "  - Component " << h + 1 << std::endl;
 
         // Compute directions
         if (this->verbose_)
-            std::cout << "    - Directions" << std::endl;
+            std::cout << "    - Directions";
         M.get<double>(OBSERVATIONS_BLK) = F().transpose() * E(); // M = Y^T*X
-        pe.compute(M, lambda());
+
+        SVector<1> best_lambda;
+        if (lambdas().size() > 1)
+        {
+            opt.optimize(f, lambdas()); // select optimal \lambda
+            best_lambda = opt.optimum();
+        }
+        else
+        {
+            best_lambda = lambdas().front();
+        }
+        if (this->verbose_)
+            std::cout << " (lambda selected = " << best_lambda[0] << ")" << std::endl;
+        pe.compute(M, best_lambda);
+
         W_.col(h) = pe.f() / pe.f_norm(); // / pe.f().norm();
         V_.col(h) = pe.s();
 
@@ -85,7 +102,7 @@ void FPLSR<PDE, RegularizationType, SamplingDesign, lambda_selection_strategy>::
         else
         {
             if (smoothing_regression_)
-                C_.col(h) = this->smoother_.compute(E(), T_.col(h)).transpose();
+                C_.col(h) = this->smoother_.tune_and_compute(E(), T_.col(h), lambdas_smoothing_regression_).transpose();
             else
                 C_.col(h) = invPsiTPsi().solve(PsiTD(not_nan()) * E().transpose() * T_.col(h)) / tTt;
         }
@@ -119,6 +136,9 @@ template <typename PDE, typename RegularizationType,
           typename SamplingDesign, typename lambda_selection_strategy>
 void FPLSR<PDE, RegularizationType, SamplingDesign, lambda_selection_strategy>::solve_(kcv_lambda_selection)
 {
+
+    /*
+
     // std::cout << "solve FPLSR KCV" << std::endl;
 
     // define internal solver
@@ -186,7 +206,7 @@ void FPLSR<PDE, RegularizationType, SamplingDesign, lambda_selection_strategy>::
         else
         {
             if (smoothing_regression_)
-                c = this->smoother_.compute(E_train, t_train).transpose();
+                c = this->smoother_.tune_and_compute(E_train, t_train).transpose();
             else
                 c = invPsiTPsi().solve(PsiTD(not_nan()) * E_train.transpose() * t_train) / tTt;
         }
@@ -271,6 +291,8 @@ void FPLSR<PDE, RegularizationType, SamplingDesign, lambda_selection_strategy>::
     }
 
     // std::cout << "solve FPLSR KCV" << std::endl;
+
+    */
 
     return;
 }
