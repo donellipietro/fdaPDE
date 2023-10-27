@@ -43,7 +43,8 @@ TEST(FRPDE, Test1_Laplacian_NonParametric_GeostatisticalAtNodes)
     bool VERBOSE = false;
 
     // define domain and regularizing PDE
-    MeshLoader<Mesh2D<>> domain("unit_square");
+    MeshLoader<Mesh2D<>>
+        domain("unit_square");
     auto L = Laplacian();
     DMatrix<double> u = DMatrix<double>::Zero(domain.mesh.elements() * 3, 1);
     PDE problem(domain.mesh, L, u); // definition of regularizing PDE
@@ -78,18 +79,31 @@ TEST(FRPDE, Test1_Laplacian_NonParametric_GeostatisticalAtNodes)
     model.init();
     model.solve();
 
-    //  **  export results  ** //
+    //   **  test correctness of computed results  **
 
-    // std::string results_directory = test_directory + "results/";
+    SpMatrix<double> expectedF;
+    Eigen::loadMarket(expectedF, "data/models/FRPDE/2D_test/f.mtx");
+    DMatrix<double> computedF = model.f();
+    if (VERBOSE)
+    {
+        std::cout << "\nExpected f:" << std::endl;
+        std::cout << expectedF.leftCols(5) << std::endl;
+        std::cout << "Obtained f:" << std::endl;
+        std::cout << computedF.leftCols(5) << std::endl;
+    }
+    EXPECT_TRUE(almost_equal(DMatrix<double>(expectedF), computedF));
 
-    // if (!std::filesystem::exists(results_directory))
-    //     std::filesystem::create_directory(results_directory);
-
-    // std::ofstream nodesfile;
-    // nodesfile.open(results_directory + "f.csv");
-    // DMatrix<double> computedF = model.f();
-    // nodesfile << computedF.format(Test_FRPDE::CSVFormat);
-    // nodesfile.close();
+    SpMatrix<double> expectedFitted;
+    Eigen::loadMarket(expectedFitted, "data/models/FRPDE/2D_test/fitted.mtx");
+    DMatrix<double> computedFitted = model.fitted();
+    if (VERBOSE)
+    {
+        std::cout << "\nExpected fitted:" << std::endl;
+        std::cout << expectedFitted.leftCols(5) << std::endl;
+        std::cout << "Obtained fitted:" << std::endl;
+        std::cout << computedFitted.leftCols(5) << std::endl;
+    }
+    EXPECT_TRUE(almost_equal(DMatrix<double>(expectedFitted), computedFitted));
 }
 
 /* test 2
@@ -106,7 +120,8 @@ TEST(FRPDE, Test1_Laplacian_NonParametric_GeostatisticalAtNodes_GCV)
     bool VERBOSE = false;
 
     // define domain and regularizing PDE
-    MeshLoader<Mesh2D<>> domain("unit_square");
+    MeshLoader<Mesh2D<>>
+        domain("unit_square");
     auto L = Laplacian();
     DMatrix<double> u = DMatrix<double>::Zero(domain.mesh.elements() * 3, 1);
     PDE problem(domain.mesh, L, u); // definition of regularizing PDE
@@ -136,21 +151,33 @@ TEST(FRPDE, Test1_Laplacian_NonParametric_GeostatisticalAtNodes_GCV)
 
     model.tune_and_compute(X, b, lambdas);
 
-    //  **  export results  ** //
+    //   **  test correctness of computed results  **
 
-    // std::string results_directory = test_directory + "results/";
+    SpMatrix<double> expectedF;
+    Eigen::loadMarket(expectedF, "data/models/FRPDE/2D_test/f_GCV.mtx");
+    DMatrix<double> computedF = model.f();
+    if (VERBOSE)
+    {
+        std::cout << "\nExpected f:" << std::endl;
+        std::cout << expectedF.leftCols(5) << std::endl;
+        std::cout << "Obtained f:" << std::endl;
+        std::cout << computedF.leftCols(5) << std::endl;
+    }
+    EXPECT_TRUE(almost_equal(DMatrix<double>(expectedF), computedF));
 
-    // if (!std::filesystem::exists(results_directory))
-    //     std::filesystem::create_directory(results_directory);
-
-    // std::ofstream nodesfile;
-    // nodesfile.open(results_directory + "f.csv");
-    // DMatrix<double> computedF = model.f();
-    // nodesfile << computedF.format(Test_FRPDE::CSVFormat);
-    // nodesfile.close();
+    SpMatrix<double> expectedFitted;
+    Eigen::loadMarket(expectedFitted, "data/models/FRPDE/2D_test/fitted_GCV.mtx");
+    DMatrix<double> computedFitted = model.fitted();
+    if (VERBOSE)
+    {
+        std::cout << "\nExpected fitted:" << std::endl;
+        std::cout << expectedFitted.leftCols(5) << std::endl;
+        std::cout << "Obtained fitted:" << std::endl;
+        std::cout << computedFitted.leftCols(5) << std::endl;
+    }
+    EXPECT_TRUE(almost_equal(DMatrix<double>(expectedFitted), computedFitted));
 }
 
-/*
 TEST(FRPDE, Test2_Surface_domain_at_locations)
 {
     bool VERBOSE = false;
@@ -191,17 +218,29 @@ TEST(FRPDE, Test2_Surface_domain_at_locations)
     model.init();
     model.solve();
 
-    // //  **  export results  ** //
+    //   **  test correctness of computed results  **
 
-    // std::string results_directory = test_directory + "results/";
+    SpMatrix<double> expectedF;
+    Eigen::loadMarket(expectedF, "data/models/FRPDE/2.5D_test/f.mtx");
+    DMatrix<double> computedF = model.f();
+    if (VERBOSE)
+    {
+        std::cout << "\nExpected f:" << std::endl;
+        std::cout << expectedF.leftCols(5) << std::endl;
+        std::cout << "Obtained f:" << std::endl;
+        std::cout << computedF.leftCols(5) << std::endl;
+    }
+    EXPECT_TRUE(almost_equal(DMatrix<double>(expectedF), computedF));
 
-    // if (!std::filesystem::exists(results_directory))
-    //     std::filesystem::create_directory(results_directory);
-
-    // std::ofstream nodesfile;
-    // nodesfile.open(results_directory + "f.csv");
-    // DMatrix<double> computedF = model.f();
-    // nodesfile << computedF.format(Test_FRPDE::CSVFormat);
-    // nodesfile.close();
+    SpMatrix<double> expectedFitted;
+    Eigen::loadMarket(expectedFitted, "data/models/FRPDE/2.5D_test/fitted.mtx");
+    DMatrix<double> computedFitted = model.fitted();
+    if (VERBOSE)
+    {
+        std::cout << "\nExpected fitted:" << std::endl;
+        std::cout << expectedFitted.leftCols(5) << std::endl;
+        std::cout << "Obtained fitted:" << std::endl;
+        std::cout << computedFitted.leftCols(5) << std::endl;
+    }
+    EXPECT_TRUE(almost_equal(DMatrix<double>(expectedFitted), computedFitted));
 }
-*/
