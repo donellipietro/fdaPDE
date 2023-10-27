@@ -39,7 +39,9 @@ namespace fdaPDE
 
             // Smoothing
             bool smoothing_regression_ = true;
-            double lambda_smoothing_regression_ = 1e-12;
+            std::vector<SVector<1>> lambdas_smoothing_regression_ = {SVector<1>{1e-12}};
+            std::vector<SVector<1>> lambda_smoothing_directions_ = {SVector<1>{std::numeric_limits<double>::quiet_NaN()}};
+            std::vector<SVector<1>> lambda_smoothing_regression_ = {SVector<1>{std::numeric_limits<double>::quiet_NaN()}};
 
             // Spatial matrices
             SpMatrix<double> PsiTPsi_{};
@@ -84,6 +86,7 @@ namespace fdaPDE
             virtual void solve(); // compute latent components
 
             // Getters
+            const std::size_t H() const { return H_; }
             const DMatrix<double> &F() const { return df_residuals_.template get<double>(OBSERVATIONS_BLK); }
             const DMatrix<double> &E() const { return df_residuals_.template get<double>(DESIGN_MATRIX_BLK); }
             const DMatrix<double> &W() const { return W_; }
@@ -91,55 +94,39 @@ namespace fdaPDE
             const DMatrix<double> &T() const { return T_; }
             const DMatrix<double> &C() const { return C_; }
             const DMatrix<double> &D() const { return D_; }
+            const DMatrix<double> B(std::size_t h = 0) const
+            {
+                h = check_h(h);
+                return compute_B(h);
+            }
             const SpMatrix<double> &PsiTPsi() const { return PsiTPsi_; }
             const fdaPDE::SparseLU<SpMatrix<double>> &invPsiTPsi() const { return invPsiTPsi_; }
+            std::size_t get_H() const { return H_; }
+            std::vector<SVector<1>> get_lambda_directions() const { return lambda_smoothing_directions_; }
+            std::vector<SVector<1>> get_lambda_regression() const { return lambda_smoothing_regression_; }
+            SVector<1> get_lambda_initialization() const { return this->lambda_smoothing_initialization_; }
 
             // Setters
             void set_tolerance(double tol) { tol_ = tol; }
             void set_max_iterations(std::size_t max_iter) { max_iter_ = max_iter; }
             void set_H(std::size_t H) { H_ = H; }
             void set_full_functional(bool full_functional) { this->full_functional_ = full_functional; }
-            void set_smoothing(bool smoothing)
+            void set_smoothing_regression(bool smoothing_regression)
             {
-                this->smoothing_initialization_ = smoothing;
-                smoothing_regression_ = smoothing;
-            }
-            void set_smoothing(bool smoothing, double lambda_smoothing)
-            {
-                this->smoothing_initialization_ = smoothing;
-                if (this->smoother_.lambdaS() != lambda_smoothing)
-                {
-                    this->lambda_smoothing_initialization_ = lambda_smoothing;
-                    this->smoother_.setLambdaS(lambda_smoothing);
-                }
-                smoothing_regression_ = smoothing;
-                lambda_smoothing_regression_ = lambda_smoothing;
-            }
-            void set_smoothing(bool smoothing_initialization, bool smoothing_regression)
-            {
-                this->smoothing_initialization_ = smoothing_initialization;
                 smoothing_regression_ = smoothing_regression;
             }
-            void set_smoothing(bool smoothing_initialization, bool smoothing_regression, double lambda_smoothing_initialization, double lambda_smoothing_regression)
+            void set_smoothing_regression(bool smoothing_regression, std::vector<SVector<1>> lambdas_smoothing_regression)
             {
-                this->smoothing_initialization_ = smoothing_initialization;
-                if (this->smoother_.lambdaS() != lambda_smoothing_initialization)
-                {
-                    this->lambda_smoothing_initialization_ = lambda_smoothing_initialization;
-                    this->smoother_.setLambdaS(lambda_smoothing_initialization);
-                }
                 smoothing_regression_ = smoothing_regression;
-                lambda_smoothing_regression_ = lambda_smoothing_regression;
+                lambdas_smoothing_regression_ = lambdas_smoothing_regression;
             }
 
             // Methods
-            DMatrix<double> reconstructed_field() const
-            {
-                if (this->verbose_)
-                    std::cout << "- Computation of the recontructed field" << std::endl;
-
-                return (T() * C().transpose()).rowwise() + this->X_mean().transpose();
-            }
+            double f_norm(const DVector<double> &f) const;
+            DMatrix<double> compute_B(std::size_t h = 0) const;
+            DMatrix<double> fitted(std::size_t h = 0) const;
+            std::size_t check_h(std::size_t h) const;
+            DMatrix<double> reconstructed_field(std::size_t h = 0) const;
 
             virtual ~FPLSR() = default;
         };

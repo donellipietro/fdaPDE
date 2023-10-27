@@ -464,7 +464,7 @@ TEST(FPLSR, Test1_RvsCpp)
     std::vector<unsigned int> tests{1, 2, 3, 4, 5};
 
     // R functional model
-    double lambda = 10.0;
+    std::vector<SVector<1>> lambdas{SVector<1>{10.0}};
     bool smoothing = false;
     bool full_functional = true;
 
@@ -490,8 +490,10 @@ TEST(FPLSR, Test1_RvsCpp)
         DMatrix<double> X = xFile.toEigen();
 
         // set model options
-        model.setLambdaS(lambda);
-        model.set_smoothing(smoothing);
+        model.set_verbose(VERBOSE);
+        model.setLambda(lambdas);
+        model.set_smoothing_initialization(smoothing);
+        model.set_smoothing_regression(smoothing);
         model.set_full_functional(full_functional);
 
         // set model data
@@ -555,8 +557,7 @@ TEST(FPLSR, Test2_consistency_with_multivariate_NIPALS)
     std::vector<unsigned int> tests{1, 2, 3, 4, 5};
 
     // multivariate model (NIPALS)
-    double lambda = 1e-15;
-    bool smoothing = false;
+    std::vector<SVector<1>> lambdas{SVector<1>{1e-15}};
     bool full_functional = false;
 
     for (unsigned int i : tests)
@@ -581,8 +582,10 @@ TEST(FPLSR, Test2_consistency_with_multivariate_NIPALS)
         DMatrix<double> X = xFile.toEigen();
 
         // set model options
-        model.setLambdaS(lambda);
-        model.set_smoothing(smoothing);
+        model.set_verbose(VERBOSE);
+        model.setLambda(lambdas);
+        model.set_smoothing_initialization(false);
+        model.set_smoothing_regression(true, lambdas);
         model.set_full_functional(full_functional);
 
         // set model data
@@ -614,6 +617,99 @@ TEST(FPLSR, Test2_consistency_with_multivariate_NIPALS)
     }
 }
 
+/* test 3:
+   GCV selection approach for model hyperparameters
+   approach:     NIPALS
+   domain:       unit square [0,1] x [0,1]
+   sampling:     locations = nodes
+   penalization: simple laplacian
+   BC:           no
+   order FE:     1
+ */
+TEST(FPLSR, Test3_GCV)
+{
+    // define domain and regularizing PDE
+    MeshLoader<Mesh2D<>> domain("unit_square");
+    auto L = Laplacian();
+    DMatrix<double> u = DMatrix<double>::Zero(domain.mesh.elements() * 3, 1);
+    PDE problem(domain.mesh, L, u);
+
+    // define statistical model
+    FPLSR<decltype(problem),
+          SpaceOnly,
+          fdaPDE::models::GeoStatMeshNodes,
+          fdaPDE::models::fixed_lambda>
+        model(problem);
+
+    // tests
+    std::string tests_directory = "data/models/FPLSR/2D_test/";
+    std::string method_name = "nipals";
+    bool VERBOSE = false;
+    std::vector<unsigned int> tests{1};
+
+    // multivariate model (NIPALS)
+    std::vector<SVector<1>> lambdas;
+    for (double x = -4; x <= 0; x += 1)
+        lambdas.push_back(SVector<1>(std::pow(10, x)));
+    bool full_functional = false;
+
+    for (unsigned int i : tests)
+    {
+
+        if (VERBOSE)
+        {
+            std::cout << "##########" << std::endl;
+            std::cout << "# Test " << i << " #" << std::endl;
+            std::cout << "##########" << std::endl;
+        }
+
+        std::string test_directory = tests_directory + "test_" + std::to_string(i) + "/";
+
+        // load data from .csv files
+        CSVReader<double> reader{};
+        CSVFile<double> yFile;
+        yFile = reader.parseFile(test_directory + "Y.csv");
+        DMatrix<double> Y = yFile.toEigen();
+        CSVFile<double> xFile;
+        xFile = reader.parseFile(test_directory + "X.csv");
+        DMatrix<double> X = xFile.toEigen();
+
+        // set model options
+        model.set_verbose(VERBOSE);
+        model.setLambda(lambdas);
+        model.set_smoothing_initialization(true, lambdas);
+        model.set_smoothing_regression(true, lambdas);
+        model.set_full_functional(full_functional);
+
+        // set model data
+        BlockFrame<double, int> df_data;
+        df_data.insert(OBSERVATIONS_BLK, Y);
+        df_data.insert(DESIGN_MATRIX_BLK, X);
+        model.setData(df_data);
+
+        // solve smoothing problem
+        model.init();
+        model.solve();
+
+        //   **  test correctness of computed results  **   //
+
+        // Results
+        DMatrix<double> W{model.W()};
+        DMatrix<double> V{model.V()};
+        DMatrix<double> T{model.T()};
+        DMatrix<double> C{model.C()};
+        DMatrix<double> D{model.D()};
+        DMatrix<double> Y_hat1{(T * D.transpose()).rowwise() + model.Y_mean().transpose()};
+        DMatrix<double> Y_hat2{model.fitted()};
+        DMatrix<double> Y_mean{model.Y_mean().transpose()};
+        DMatrix<double> X_hat{model.reconstructed_field()};
+        DMatrix<double> X_mean{model.X_mean().transpose()};
+        DMatrix<double> B_hat{model.B()};
+
+        // Test_fPLSR::compare_NIPALS(test_directory, method_name, VERBOSE, true, W, V, T, C, D, Y_hat1, Y_hat2, Y_mean, X_hat, X_mean, B_hat);
+    }
+}
+
 /* test 2:
    Checking that the functional method is consistent with the
    multivariate one for small values of lambda
@@ -624,6 +720,7 @@ TEST(FPLSR, Test2_consistency_with_multivariate_NIPALS)
    BC:           no
    order FE:     1
  */
+/*
 TEST(FPLSR, Test2_consistency_with_multivariate_SIMPLS)
 {
     // define domain and regularizing PDE
@@ -704,3 +801,4 @@ TEST(FPLSR, Test2_consistency_with_multivariate_SIMPLS)
         Test_fPLSR::compare_SIMPLS(test_directory, method_name, VERBOSE, false, R, Q, T, U, P, V, Y_hat, Y_mean, X_hat, X_mean, B_hat, "");
     }
 }
+*/

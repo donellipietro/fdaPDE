@@ -61,13 +61,35 @@ public:
     SpMatrix<double> R0() const { return model_.R0(); }
     SpMatrix<double> Psi() { return model_.Psi(fdaPDE::models::not_nan()); }
 
+    // !! Defaults values are not working with Rcpp !!
+
     // Getters functional regression
-    DMatrix<double> B() const { return model_.B(); }
+    DMatrix<double> B(std::size_t h = 0) const { return model_.B(h); }
     DMatrix<double> Y_mean() const { return model_.Y_mean(); }
     DMatrix<double> X_mean() const { return model_.X_mean(); }
-    DMatrix<double> reconstructed_field() const { return model_.reconstructed_field(); }
-    DMatrix<double> fitted() const { return model_.fitted(); }
+    DMatrix<double> reconstructed_field(std::size_t h = 0) const { return model_.reconstructed_field(h); }
+    DMatrix<double> fitted(std::size_t h = 0) const { return model_.fitted(h); }
     DMatrix<double> predict(const DVector<double> &covs) const { return model_.predict(covs); }
+    std::vector<double> get_lambda_initialization()
+    {
+        std::vector<double> lambda(model_.get_H() + 1, std::numeric_limits<double>::quiet_NaN());
+        lambda[0] = model_.get_lambda_initialization()[0];
+        return lambda;
+    }
+    std::vector<double> get_lambda_directions()
+    {
+        std::vector<double> lambda(1, std::numeric_limits<double>::quiet_NaN());
+        for (const auto v : model_.get_lambda_directions())
+            lambda.push_back(v[0]);
+        return lambda;
+    }
+    std::vector<double> get_lambda_regression()
+    {
+        std::vector<double> lambda(1, std::numeric_limits<double>::quiet_NaN());
+        for (const auto v : model_.get_lambda_regression())
+            lambda.push_back(v[0]);
+        return lambda;
+    }
 
     // Getters fPLSR
     DMatrix<double> F() const { return model_.F(); }
@@ -86,13 +108,31 @@ public:
     // Setters options
     void set_verbose(bool verbose) { model_.set_verbose(verbose); }
     void set_full_functional(bool full_functional) { model_.set_full_functional(full_functional); }
-    void set_smoothing0(bool smoothing) { model_.set_smoothing(smoothing); }
-    void set_smoothing1(bool smoothing, double lambda_smoothing) { model_.set_smoothing(smoothing, lambda_smoothing); }
-    void set_smoothing2(bool smoothing_initialization, bool smoothing_regression) { model_.set_smoothing(smoothing_initialization, smoothing_regression); }
-    void set_smoothing3(bool smoothing_initialization, bool smoothing_regression, double lambda_smoothing_initialization, double lambda_smoothing_regression) { model_.set_smoothing(smoothing_initialization, smoothing_regression, lambda_smoothing_initialization, lambda_smoothing_regression); }
+    void set_smoothing_initialization(bool smoothing_initialization) { model_.set_smoothing_initialization(smoothing_initialization); }
+    void set_smoothing_initialization_l(bool smoothing_initialization, std::vector<double> lambdas_smoothing_initialization)
+    {
+        std::vector<SVector<1>> l_;
+        for (auto v : lambdas_smoothing_initialization)
+            l_.push_back(SVector<1>(v));
+        model_.set_smoothing_initialization(smoothing_initialization, l_);
+    }
+    void set_smoothing_regression(bool smoothing_regression) { model_.set_smoothing_regression(smoothing_regression); }
+    void set_smoothing_regression_l(bool smoothing_regression, std::vector<double> lambdas_smoothing_regression)
+    {
+        std::vector<SVector<1>> l_;
+        for (auto v : lambdas_smoothing_regression)
+            l_.push_back(SVector<1>(v));
+        model_.set_smoothing_regression(smoothing_regression, l_);
+    }
 
     // Setters data and parameters
-    void set_lambda_s(double lambdaS) { model_.setLambdaS(lambdaS); }
+    void set_lambdas(std::vector<double> lambdas)
+    {
+        std::vector<SVector<1>> l_;
+        for (auto v : lambdas)
+            l_.push_back(SVector<1>(v));
+        model_.setLambda(l_);
+    }
     void set_data(const DMatrix<double> &Y, const DMatrix<double> &X)
     {
         df_.template insert<double>(OBSERVATIONS_BLK, Y);
@@ -135,6 +175,9 @@ RCPP_MODULE(FPLSR_Laplacian_2D_GeoStatNodes)
         .method("reconstructed_field", &FPLSR_Laplacian_2D_GeoStatNodes::reconstructed_field)
         .method("fitted", &FPLSR_Laplacian_2D_GeoStatNodes::fitted)
         .method("predict", &FPLSR_Laplacian_2D_GeoStatNodes::predict)
+        .method("get_lambda_initialization", &FPLSR_Laplacian_2D_GeoStatNodes::get_lambda_initialization)
+        .method("get_lambda_directions", &FPLSR_Laplacian_2D_GeoStatNodes::get_lambda_directions)
+        .method("get_lambda_regression", &FPLSR_Laplacian_2D_GeoStatNodes::get_lambda_regression)
         // Getters fPLSR
         .method("F", &FPLSR_Laplacian_2D_GeoStatNodes::F)
         .method("E", &FPLSR_Laplacian_2D_GeoStatNodes::E)
@@ -150,12 +193,12 @@ RCPP_MODULE(FPLSR_Laplacian_2D_GeoStatNodes)
         // Setters options
         .method("set_verbose", &FPLSR_Laplacian_2D_GeoStatNodes::set_verbose)
         .method("set_full_functional", &FPLSR_Laplacian_2D_GeoStatNodes::set_full_functional)
-        .method("set_smoothing0", &FPLSR_Laplacian_2D_GeoStatNodes::set_smoothing0)
-        .method("set_smoothing1", &FPLSR_Laplacian_2D_GeoStatNodes::set_smoothing1)
-        .method("set_smoothing2", &FPLSR_Laplacian_2D_GeoStatNodes::set_smoothing2)
-        .method("set_smoothing3", &FPLSR_Laplacian_2D_GeoStatNodes::set_smoothing3)
+        .method("set_smoothing_initialization", &FPLSR_Laplacian_2D_GeoStatNodes::set_smoothing_initialization)
+        .method("set_smoothing_initialization_l", &FPLSR_Laplacian_2D_GeoStatNodes::set_smoothing_initialization_l)
+        .method("set_smoothing_regression", &FPLSR_Laplacian_2D_GeoStatNodes::set_smoothing_regression)
+        .method("set_smoothing_regression_l", &FPLSR_Laplacian_2D_GeoStatNodes::set_smoothing_regression_l)
         // Setters data and parameters
-        .method("set_lambda_s", &FPLSR_Laplacian_2D_GeoStatNodes::set_lambda_s)
+        .method("set_lambdas", &FPLSR_Laplacian_2D_GeoStatNodes::set_lambdas)
         .method("set_data", &FPLSR_Laplacian_2D_GeoStatNodes::set_data)
         .method("set_locations", &FPLSR_Laplacian_2D_GeoStatNodes::set_locations)
         // Solve method
@@ -182,6 +225,9 @@ RCPP_MODULE(FPLSR_Laplacian_2D_GeoStatLocations)
         .method("reconstructed_field", &FPLSR_Laplacian_2D_GeoStatLocations::reconstructed_field)
         .method("fitted", &FPLSR_Laplacian_2D_GeoStatLocations::fitted)
         .method("predict", &FPLSR_Laplacian_2D_GeoStatLocations::predict)
+        .method("get_lambda_initialization", &FPLSR_Laplacian_2D_GeoStatLocations::get_lambda_initialization)
+        .method("get_lambda_directions", &FPLSR_Laplacian_2D_GeoStatLocations::get_lambda_directions)
+        .method("get_lambda_regression", &FPLSR_Laplacian_2D_GeoStatLocations::get_lambda_regression)
         // Getters fPLSR
         .method("F", &FPLSR_Laplacian_2D_GeoStatLocations::F)
         .method("E", &FPLSR_Laplacian_2D_GeoStatLocations::E)
@@ -197,12 +243,12 @@ RCPP_MODULE(FPLSR_Laplacian_2D_GeoStatLocations)
         // Setters options
         .method("set_verbose", &FPLSR_Laplacian_2D_GeoStatLocations::set_verbose)
         .method("set_full_functional", &FPLSR_Laplacian_2D_GeoStatLocations::set_full_functional)
-        .method("set_smoothing0", &FPLSR_Laplacian_2D_GeoStatLocations::set_smoothing0)
-        .method("set_smoothing1", &FPLSR_Laplacian_2D_GeoStatLocations::set_smoothing1)
-        .method("set_smoothing2", &FPLSR_Laplacian_2D_GeoStatLocations::set_smoothing2)
-        .method("set_smoothing3", &FPLSR_Laplacian_2D_GeoStatLocations::set_smoothing3)
+        .method("set_smoothing_initialization", &FPLSR_Laplacian_2D_GeoStatLocations::set_smoothing_initialization)
+        .method("set_smoothing_initialization_l", &FPLSR_Laplacian_2D_GeoStatLocations::set_smoothing_initialization_l)
+        .method("set_smoothing_regression", &FPLSR_Laplacian_2D_GeoStatLocations::set_smoothing_regression)
+        .method("set_smoothing_regression_l", &FPLSR_Laplacian_2D_GeoStatLocations::set_smoothing_regression_l)
         // Setters data and parameters
-        .method("set_lambda_s", &FPLSR_Laplacian_2D_GeoStatLocations::set_lambda_s)
+        .method("set_lambdas", &FPLSR_Laplacian_2D_GeoStatLocations::set_lambdas)
         .method("set_data", &FPLSR_Laplacian_2D_GeoStatLocations::set_data)
         .method("set_locations", &FPLSR_Laplacian_2D_GeoStatLocations::set_locations)
         // Solve method

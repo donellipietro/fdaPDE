@@ -70,6 +70,10 @@ public:
   {
     model_.set_spatial_locations(data);
   }
+  void set_verbose(bool verbose)
+  {
+    model_.set_verbose(verbose);
+  }
 
   // getters
   DMatrix<double> f() const { return model_.f(); }
@@ -83,6 +87,19 @@ public:
     model_.init();
     model_.solve();
     return;
+  }
+
+  // Tune method
+  SVector<1> tune(std::vector<double> &lambdas)
+  {
+    std::vector<SVector<1>> l_;
+    for (auto v : lambdas)
+      l_.push_back(SVector<1>(v));
+
+    model_.init();
+    model_.tune(l_);
+
+    return model_.get_best_lambda();
   }
 };
 
@@ -105,8 +122,11 @@ RCPP_MODULE(FRPDE_Laplacian_2D_GeoStatNodes)
       .method("set_lambda_s", &FRPDE_Laplacian_2D_GeoStatNodes::set_lambda_s)
       // .method("set_lambdas", &FRPDE_Laplacian_2D_GeoStatNodes::set_lambdas)
       .method("set_observations", &FRPDE_Laplacian_2D_GeoStatNodes::set_observations)
+      .method("set_verbose", &FRPDE_Laplacian_2D_GeoStatNodes::set_verbose)
       // Solve method
-      .method("solve", &FRPDE_Laplacian_2D_GeoStatNodes::solve);
+      .method("solve", &FRPDE_Laplacian_2D_GeoStatNodes::solve)
+      // Tune method
+      .method("tune", &FRPDE_Laplacian_2D_GeoStatNodes::tune);
 }
 
 // Laplacian_2D_Order1, locations != nodes
@@ -129,8 +149,11 @@ RCPP_MODULE(FRPDE_Laplacian_2D_GeoStatLocations)
       // .method("set_lambdas", &FRPDE_Laplacian_2D_GeoStatLocations::set_lambdas)
       .method("set_locations", &FRPDE_Laplacian_2D_GeoStatLocations::set_locations)
       .method("set_observations", &FRPDE_Laplacian_2D_GeoStatLocations::set_observations)
+      .method("set_verbose", &FRPDE_Laplacian_2D_GeoStatLocations::set_verbose)
       // Solve method
-      .method("solve", &FRPDE_Laplacian_2D_GeoStatLocations::solve);
+      .method("solve", &FRPDE_Laplacian_2D_GeoStatLocations::solve)
+      // Tune method
+      .method("tune", &FRPDE_Laplacian_2D_GeoStatLocations::tune);
 }
 
 // Laplacian_Surface_Order1, locations == nodes
@@ -152,8 +175,11 @@ RCPP_MODULE(FRPDE_Laplacian_Surface_GeoStatNodes)
       .method("set_lambda_s", &FRPDE_Laplacian_Surface_GeoStatNodes::set_lambda_s)
       // .method("set_lambdas", &FRPDE_Laplacian_Surface_GeoStatNodes::set_lambdas)
       .method("set_observations", &FRPDE_Laplacian_Surface_GeoStatNodes::set_observations)
+      .method("set_verbose", &FRPDE_Laplacian_Surface_GeoStatNodes::set_verbose)
       // Solve method
-      .method("solve", &FRPDE_Laplacian_Surface_GeoStatNodes::solve);
+      .method("solve", &FRPDE_Laplacian_Surface_GeoStatNodes::solve)
+      // Tune method
+      .method("tune", &FRPDE_Laplacian_Surface_GeoStatNodes::tune);
 }
 
 // Laplacian_Surface_Order1, locations != nodes
@@ -176,6 +202,9 @@ RCPP_MODULE(FRPDE_Laplacian_Surface_GeoStatLocations)
       // .method("set_lambdas", &FRPDE_Laplacian_Surface_GeoStatLocations::set_lambdas)
       .method("set_locations", &FRPDE_Laplacian_Surface_GeoStatLocations::set_locations)
       .method("set_observations", &FRPDE_Laplacian_Surface_GeoStatLocations::set_observations)
+      .method("set_verbose", &FRPDE_Laplacian_Surface_GeoStatLocations::set_verbose)
       // Solve method
-      .method("solve", &FRPDE_Laplacian_Surface_GeoStatLocations::solve);
+      .method("solve", &FRPDE_Laplacian_Surface_GeoStatLocations::solve)
+      // Tune method
+      .method("tune", &FRPDE_Laplacian_Surface_GeoStatLocations::tune);
 }

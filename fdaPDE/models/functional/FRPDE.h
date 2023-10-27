@@ -2,6 +2,11 @@
 #define __FRPDE_H__
 
 #include "../../core/utils/Symbols.h"
+#include "../../calibration/GCV.h"
+using fdaPDE::calibration::GCV;
+using fdaPDE::calibration::StochasticEDF;
+#include "../../core/OPT/optimizers/GridOptimizer.h"
+using fdaPDE::core::OPT::GridOptimizer;
 #include "../regression/SRPDE.h"
 using fdaPDE::models::SRPDE;
 
@@ -36,6 +41,9 @@ namespace fdaPDE
             // Problem solution
             DMatrix<double> f_;
 
+            // Lambda
+            SVector<1> best_lambda_{std::numeric_limits<double>::quiet_NaN()};
+
             // Options
             bool verbose_ = false;
 
@@ -51,6 +59,7 @@ namespace fdaPDE
             DMatrix<double> f() const { return f_; }
             DMatrix<double> fitted() const { return f_ * solver_.PsiTD(); }
             double lambdaS() const { return solver_.lambdaS(); }
+            SVector<1> get_best_lambda() const { return best_lambda_; }
 
             // setters
             void setPDE(const PDE &pde)
@@ -153,8 +162,9 @@ namespace fdaPDE
                 return;
             }
 
-            DMatrix<double> compute(const DMatrix<double> &X, const DVector<double> &b)
+            DMatrix<double> compute(const DMatrix<double> &X, const DVector<double> &b, double lambda)
             {
+                setLambdaS(lambda);
                 setData(X, b);
                 init();
                 solve();
@@ -162,10 +172,82 @@ namespace fdaPDE
                 return f_;
             }
 
-            DMatrix<double> compute(const DMatrix<double> &X)
+            DMatrix<double> compute(const DMatrix<double> &X, double lambda)
+            {
+                setLambdaS(lambda);
+                setData(X);
+                init();
+                solve();
+
+                return f_;
+            }
+
+            void tune(std::vector<SVector<1>> &lambdas)
+            {
+
+                if (lambdas.size() > 1)
+                {
+
+                    if (verbose_)
+                    {
+                        std::cout << "- Tuning on lambdas" << std::endl;
+                    }
+
+                    std::size_t seed = 476813;
+                    GCV<decltype(solver_), StochasticEDF<decltype(solver_)>> gcv(solver_, 1000, seed);
+
+                    GridOptimizer<1> opt;
+                    ScalarField<1, decltype(gcv)> obj(gcv);
+                    opt.optimize(obj, lambdas); // optimize gcv field
+                    best_lambda_ = opt.optimum();
+                    return;
+                }
+
+                best_lambda_ = lambdas.front();
+                return;
+            }
+
+            void tuning(const DMatrix<double> &X, const DVector<double> &b, std::vector<SVector<1>> &lambdas)
+            {
+                setData(X, b);
+                init();
+
+                tune(lambdas);
+                return;
+            }
+
+            void tuning(const DMatrix<double> &X, std::vector<SVector<1>> &lambdas)
             {
                 setData(X);
                 init();
+
+                tune(lambdas);
+                return;
+            }
+
+            DMatrix<double> tune_and_compute(const DMatrix<double> &X, const DVector<double> &b, std::vector<SVector<1>> &lambdas)
+            {
+                tuning(X, b, lambdas);
+
+                if (verbose_)
+                    std::cout << "- Best lambda: " << best_lambda_ << std::endl;
+
+                setLambdaS(best_lambda_[0]);
+                solver_.init_model();
+                solve();
+
+                return f_;
+            }
+
+            DMatrix<double> tune_and_compute(const DMatrix<double> &X, std::vector<SVector<1>> &lambdas)
+            {
+                tuning(X, lambdas);
+
+                if (verbose_)
+                    std::cout << "- Best lambda: " << best_lambda_ << std::endl;
+
+                setLambdaS(best_lambda_[0]);
+                solver_.init_model();
                 solve();
 
                 return f_;
