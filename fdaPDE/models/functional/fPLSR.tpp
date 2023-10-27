@@ -28,6 +28,20 @@ void FPLSR<PDE, RegularizationType, SamplingDesign, lambda_selection_strategy>::
     return;
 }
 
+template <typename PDE, typename RegularizationType,
+          typename SamplingDesign, typename lambda_selection_strategy>
+double FPLSR<PDE, RegularizationType, SamplingDesign, lambda_selection_strategy>::f_norm(const DVector<double> &f) const
+{
+
+    double f_n_norm = 0;
+    if constexpr (is_space_only<decltype(*this)>::value)
+        f_n_norm = std::sqrt(f.dot(R0() * f));
+    else
+        f_n_norm = (Psi(not_nan()) * f).norm();
+
+    return f_n_norm;
+}
+
 // Solution in case of fixed \lambda
 template <typename PDE, typename RegularizationType,
           typename SamplingDesign, typename lambda_selection_strategy>
@@ -55,6 +69,10 @@ void FPLSR<PDE, RegularizationType, SamplingDesign, lambda_selection_strategy>::
     if (this->verbose_)
         std::cout << "- Latent components computation" << std::endl;
 
+    // Room for selected lambdas
+    lambda_smoothing_directions_.resize(H_);
+    lambda_smoothing_regression_.resize(H_);
+
     // Latent Components computation
     for (std::size_t h = 0; h < H_; h++)
     {
@@ -79,9 +97,10 @@ void FPLSR<PDE, RegularizationType, SamplingDesign, lambda_selection_strategy>::
         }
         if (this->verbose_)
             std::cout << " (lambda selected = " << best_lambda[0] << ")" << std::endl;
+        lambda_smoothing_directions_[h] = best_lambda;
         pe.compute(M, best_lambda);
 
-        W_.col(h) = pe.f() / pe.f_norm(); // / pe.f().norm();
+        W_.col(h) = pe.f() / f_norm(pe.f());
         V_.col(h) = pe.s();
 
         // Compute the latent variable
@@ -96,16 +115,24 @@ void FPLSR<PDE, RegularizationType, SamplingDesign, lambda_selection_strategy>::
         // Regression
         if (this->verbose_)
             std::cout << "    - Regression" << std::endl;
-        D_.col(h) = F().transpose() * T_.col(h) / tTt;
         if (this->full_functional_)
             C_.col(h) = E().transpose() * T_.col(h) / tTt;
         else
         {
             if (smoothing_regression_)
+            {
                 C_.col(h) = this->smoother_.tune_and_compute(E(), T_.col(h), lambdas_smoothing_regression_).transpose();
+                lambda_smoothing_regression_[h] = this->smoother_.get_best_lambda();
+            }
             else
                 C_.col(h) = invPsiTPsi().solve(PsiTD(not_nan()) * E().transpose() * T_.col(h)) / tTt;
         }
+        double c_norm = f_norm(C_.col(h));
+        C_.col(h) = C_.col(h) / c_norm;
+        T_.col(h) = T_.col(h) * c_norm;
+        tTt = tTt * c_norm * c_norm;
+
+        D_.col(h) = F().transpose() * T_.col(h) / tTt;
 
         // Deflation
         if (this->verbose_)
@@ -117,18 +144,49 @@ void FPLSR<PDE, RegularizationType, SamplingDesign, lambda_selection_strategy>::
     // Functional coefficients matrix computation
     if (this->verbose_)
         std::cout << "- Functional coefficients matrix computation" << std::endl;
+    this->B_ = compute_B();
+
+    return;
+}
+
+template <typename PDE, typename RegularizationType,
+          typename SamplingDesign, typename lambda_selection_strategy>
+DMatrix<double> FPLSR<PDE, RegularizationType, SamplingDesign, lambda_selection_strategy>::compute_B(std::size_t h) const
+{
+    h = check_h(h);
+
+    DMatrix<double> B;
+
     if (this->full_functional_)
     {
-        auto invAUX = (C_.transpose() * R0() * W_).partialPivLu();
-        this->B_ = W_ * invAUX.solve(D_.transpose());
+        auto invAUX = (C_.block(0, 0, this->K_, h).transpose() * R0() * W_.block(0, 0, this->K_, h)).partialPivLu();
+        B = W_.block(0, 0, this->K_, h) * invAUX.solve(D_.block(0, 0, this->L_, h).transpose());
     }
     else
     {
-        auto invAUX = (C_.transpose() * PsiTPsi() * W_).partialPivLu();
-        this->B_ = W_ * invAUX.solve(D_.transpose());
+        auto invAUX = (C_.block(0, 0, this->K_, h).transpose() * PsiTPsi() * W_.block(0, 0, this->K_, h)).partialPivLu();
+        B = W_.block(0, 0, this->K_, h) * invAUX.solve(D_.block(0, 0, this->L_, h).transpose());
     }
 
-    return;
+    return B;
+}
+
+template <typename PDE, typename RegularizationType,
+          typename SamplingDesign, typename lambda_selection_strategy>
+DMatrix<double> FPLSR<PDE, RegularizationType, SamplingDesign, lambda_selection_strategy>::fitted(std::size_t h) const
+{
+    h = check_h(h);
+
+    if (this->verbose_)
+        std::cout << "- Fitted values computaion" << std::endl;
+
+    DMatrix<double> Y_hat(this->N_, this->L_);
+    Y_hat = T_.block(0, 0, this->N_, h) * D_.block(0, 0, this->L_, h);
+
+    if (this->center_)
+        Y_hat = Y_hat.rowwise() + this->Y_mean_.transpose();
+
+    return Y_hat;
 }
 
 // best \lambda for PC choosen according to K-fold CV strategy, uses the reconstruction error on test set as CV score
@@ -304,4 +362,29 @@ void FPLSR<PDE, RegularizationType, SamplingDesign, lambda_selection_strategy>::
 {
     // dispatch to desired solution strategy
     solve_(lambda_selection_strategy());
+}
+
+template <typename PDE, typename RegularizationType,
+          typename SamplingDesign, typename lambda_selection_strategy>
+DMatrix<double> FPLSR<PDE, RegularizationType, SamplingDesign, lambda_selection_strategy>::reconstructed_field(std::size_t h) const
+{
+    h = check_h(h);
+
+    if (this->verbose_)
+        std::cout << "- Computation of the recontructed field" << std::endl;
+
+    return (T().block(0, 0, this->N_, h) * C().block(0, 0, this->K_, h).transpose()).rowwise() + this->X_mean().transpose();
+}
+
+template <typename PDE, typename RegularizationType,
+          typename SamplingDesign, typename lambda_selection_strategy>
+std::size_t FPLSR<PDE, RegularizationType, SamplingDesign, lambda_selection_strategy>::check_h(std::size_t h) const
+{
+    if (h > H_)
+        throw std::logic_error("h can not be larger than the total number of components");
+
+    if (h == 0)
+        return H_;
+
+    return h;
 }

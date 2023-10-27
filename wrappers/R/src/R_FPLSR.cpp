@@ -61,13 +61,35 @@ public:
     SpMatrix<double> R0() const { return model_.R0(); }
     SpMatrix<double> Psi() { return model_.Psi(fdaPDE::models::not_nan()); }
 
+    // !! Defaults values are not working with Rcpp !!
+
     // Getters functional regression
-    DMatrix<double> B() const { return model_.B(); }
+    DMatrix<double> B(std::size_t h = 0) const { return model_.B(h); }
     DMatrix<double> Y_mean() const { return model_.Y_mean(); }
     DMatrix<double> X_mean() const { return model_.X_mean(); }
-    DMatrix<double> reconstructed_field() const { return model_.reconstructed_field(); }
-    DMatrix<double> fitted() const { return model_.fitted(); }
+    DMatrix<double> reconstructed_field(std::size_t h = 0) const { return model_.reconstructed_field(h); }
+    DMatrix<double> fitted(std::size_t h = 0) const { return model_.fitted(h); }
     DMatrix<double> predict(const DVector<double> &covs) const { return model_.predict(covs); }
+    std::vector<double> get_lambda_initialization()
+    {
+        std::vector<double> lambda(model_.get_H() + 1, std::numeric_limits<double>::quiet_NaN());
+        lambda[0] = model_.get_lambda_initialization()[0];
+        return lambda;
+    }
+    std::vector<double> get_lambda_directions()
+    {
+        std::vector<double> lambda(1, std::numeric_limits<double>::quiet_NaN());
+        for (const auto v : model_.get_lambda_directions())
+            lambda.push_back(v[0]);
+        return lambda;
+    }
+    std::vector<double> get_lambda_regression()
+    {
+        std::vector<double> lambda(1, std::numeric_limits<double>::quiet_NaN());
+        for (const auto v : model_.get_lambda_regression())
+            lambda.push_back(v[0]);
+        return lambda;
+    }
 
     // Getters fPLSR
     DMatrix<double> F() const { return model_.F(); }
@@ -153,6 +175,9 @@ RCPP_MODULE(FPLSR_Laplacian_2D_GeoStatNodes)
         .method("reconstructed_field", &FPLSR_Laplacian_2D_GeoStatNodes::reconstructed_field)
         .method("fitted", &FPLSR_Laplacian_2D_GeoStatNodes::fitted)
         .method("predict", &FPLSR_Laplacian_2D_GeoStatNodes::predict)
+        .method("get_lambda_initialization", &FPLSR_Laplacian_2D_GeoStatNodes::get_lambda_initialization)
+        .method("get_lambda_directions", &FPLSR_Laplacian_2D_GeoStatNodes::get_lambda_directions)
+        .method("get_lambda_regression", &FPLSR_Laplacian_2D_GeoStatNodes::get_lambda_regression)
         // Getters fPLSR
         .method("F", &FPLSR_Laplacian_2D_GeoStatNodes::F)
         .method("E", &FPLSR_Laplacian_2D_GeoStatNodes::E)
@@ -200,6 +225,9 @@ RCPP_MODULE(FPLSR_Laplacian_2D_GeoStatLocations)
         .method("reconstructed_field", &FPLSR_Laplacian_2D_GeoStatLocations::reconstructed_field)
         .method("fitted", &FPLSR_Laplacian_2D_GeoStatLocations::fitted)
         .method("predict", &FPLSR_Laplacian_2D_GeoStatLocations::predict)
+        .method("get_lambda_initialization", &FPLSR_Laplacian_2D_GeoStatLocations::get_lambda_initialization)
+        .method("get_lambda_directions", &FPLSR_Laplacian_2D_GeoStatLocations::get_lambda_directions)
+        .method("get_lambda_regression", &FPLSR_Laplacian_2D_GeoStatLocations::get_lambda_regression)
         // Getters fPLSR
         .method("F", &FPLSR_Laplacian_2D_GeoStatLocations::F)
         .method("E", &FPLSR_Laplacian_2D_GeoStatLocations::E)

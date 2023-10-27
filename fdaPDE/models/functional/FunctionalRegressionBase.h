@@ -45,6 +45,7 @@ namespace fdaPDE
             // Smoothing
             bool smoothing_initialization_ = true;
             std::vector<SVector<1>> lambdas_smoothing_initialization_{SVector<1>{1e-12}};
+            SVector<1> lambda_smoothing_initialization_{std::numeric_limits<double>::quiet_NaN()};
 
             // Centering
             bool center_;
@@ -148,6 +149,7 @@ namespace fdaPDE
                     if (verbose_)
                         std::cout << "  - Data centering (forced)" << std::endl;
                     X_mean_ = smoother_.tune_and_compute(X_original(), lambdas_smoothing_initialization_).transpose();
+                    lambda_smoothing_initialization_ = smoother_.get_best_lambda();
                     const DVector<double> X_mean_at_locations = smoother_.fitted().transpose();
                     df_centered_.insert<double>(DESIGN_MATRIX_BLK, X_original().rowwise() - X_mean_at_locations.transpose());
                 }
@@ -158,6 +160,7 @@ namespace fdaPDE
                         if (verbose_)
                             std::cout << "  - Data centering" << std::endl;
                         X_mean_ = smoother_.tune_and_compute(X_original(), lambdas_smoothing_initialization_).transpose();
+                        lambda_smoothing_initialization_ = smoother_.get_best_lambda();
                         const DVector<double> X_mean_at_locations = smoother_.fitted().transpose();
                         df_centered_.insert<double>(DESIGN_MATRIX_BLK, X_original().rowwise() - X_mean_at_locations.transpose());
                     }
