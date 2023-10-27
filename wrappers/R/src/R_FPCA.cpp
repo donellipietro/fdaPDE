@@ -95,10 +95,8 @@ public:
   }
 };
 
-// fPCA Rcpp module
-typedef R_FPCA<Laplacian_2D_Order1, fdaPDE::models::GeoStatMeshNodes> FPCA_Laplacian_2D_GeoStatNodes;
-
 // Locations == Nodes
+typedef R_FPCA<Laplacian_2D_Order1, fdaPDE::models::GeoStatMeshNodes> FPCA_Laplacian_2D_GeoStatNodes;
 RCPP_MODULE(FPCA_Laplacian_2D_GeoStatNodes)
 {
   Rcpp::class_<FPCA_Laplacian_2D_GeoStatNodes>("FPCA_Laplacian_2D_GeoStatNodes")

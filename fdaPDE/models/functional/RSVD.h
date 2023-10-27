@@ -14,7 +14,7 @@ public:
 
     // Intermediate steps matrices
     DMatrix<double> C1_;
-    DMatrix<double> DT1_;
+    DMatrix<double> D1_;
 
     // Solutions
     DMatrix<double> H_;
@@ -59,11 +59,6 @@ public:
         cholesky.compute(C);
         DMatrix<double> D_{cholesky.matrixL()};
 
-        // C matrix inversion
-        if (verbose_)
-            std::cout << "  - C matrix inversion" << std::endl;
-        C1_ = cholesky.solve(DMatrix<double>::Identity(K_, K_));
-
         // D matrix LU decomposition
         if (verbose_)
             std::cout << "  - D matrix LU decomposition" << std::endl;
@@ -73,7 +68,7 @@ public:
         // D matrix inversion
         if (verbose_)
             std::cout << "  - D matrix inversion" << std::endl;
-        DT1_ = (invD.solve(DMatrix<double>::Identity(K_, K_))).transpose();
+        D1_ = invD.solve(DMatrix<double>::Identity(K_, K_));
 
         // std::cout << "init" << std::endl;
 
@@ -93,7 +88,7 @@ public:
         // SVD
         if (verbose_)
             std::cout << "  - SVD" << std::endl;
-        Eigen::JacobiSVD<DMatrix<double>> svd(X_ * Psi_ * DT1_, Eigen::ComputeThinU | Eigen::ComputeThinV);
+        Eigen::JacobiSVD<DMatrix<double>> svd(X_ * Psi_ * D1_.transpose(), Eigen::ComputeThinU | Eigen::ComputeThinV);
 
         // Results, H
         if (verbose_)
@@ -103,7 +98,7 @@ public:
         // Results, W
         if (verbose_)
             std::cout << "  - Results, W" << std::endl;
-        W_ = (H_.transpose() * X_ * Psi_ * C1_).transpose();
+        W_ = (svd.singularValues().head(rank).asDiagonal() * svd.matrixV().leftCols(rank).transpose() * D1_).transpose();
 
         // std::cout << "solve" << std::endl;
 
