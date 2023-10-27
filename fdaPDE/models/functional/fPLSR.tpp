@@ -181,7 +181,7 @@ DMatrix<double> FPLSR<PDE, RegularizationType, SamplingDesign, lambda_selection_
         std::cout << "- Fitted values computaion" << std::endl;
 
     DMatrix<double> Y_hat(this->N_, this->L_);
-    Y_hat = T_.block(0, 0, this->N_, h) * D_.block(0, 0, this->L_, h);
+    Y_hat = T_.block(0, 0, this->N_, h) * D_.block(0, 0, this->L_, h).transpose();
 
     if (this->center_)
         Y_hat = Y_hat.rowwise() + this->Y_mean_.transpose();
