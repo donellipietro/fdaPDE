@@ -41,6 +41,9 @@ namespace fdaPDE
             // Problem solution
             DMatrix<double> f_;
 
+            // Lambda
+            SVector<1> best_lambda_{std::numeric_limits<double>::quiet_NaN()};
+
             // Options
             bool verbose_ = false;
 
@@ -56,6 +59,7 @@ namespace fdaPDE
             DMatrix<double> f() const { return f_; }
             DMatrix<double> fitted() const { return f_ * solver_.PsiTD(); }
             double lambdaS() const { return solver_.lambdaS(); }
+            SVector<1> get_best_lambda() const { return best_lambda_; }
 
             // setters
             void setPDE(const PDE &pde)
@@ -178,7 +182,7 @@ namespace fdaPDE
                 return f_;
             }
 
-            SVector<1> tune(std::vector<SVector<1>> &lambdas)
+            void tune(std::vector<SVector<1>> &lambdas)
             {
 
                 if (lambdas.size() > 1)
@@ -186,10 +190,7 @@ namespace fdaPDE
 
                     if (verbose_)
                     {
-                        std::cout << "- Tuning on: ";
-                        for (auto lambda : lambdas)
-                            std::cout << lambda << " ";
-                        std::cout << std::endl;
+                        std::cout << "- Tuning on lambdas" << std::endl;
                     }
 
                     std::size_t seed = 476813;
@@ -198,38 +199,40 @@ namespace fdaPDE
                     GridOptimizer<1> opt;
                     ScalarField<1, decltype(gcv)> obj(gcv);
                     opt.optimize(obj, lambdas); // optimize gcv field
-                    SVector<1> best_lambda = opt.optimum();
-
-                    return best_lambda;
+                    best_lambda_ = opt.optimum();
+                    return;
                 }
 
-                return lambdas.front();
+                best_lambda_ = lambdas.front();
+                return;
             }
 
-            SVector<1> tuning(const DMatrix<double> &X, const DVector<double> &b, std::vector<SVector<1>> &lambdas)
+            void tuning(const DMatrix<double> &X, const DVector<double> &b, std::vector<SVector<1>> &lambdas)
             {
                 setData(X, b);
                 init();
 
-                return tune(lambdas);
+                tune(lambdas);
+                return;
             }
 
-            SVector<1> tuning(const DMatrix<double> &X, std::vector<SVector<1>> &lambdas)
+            void tuning(const DMatrix<double> &X, std::vector<SVector<1>> &lambdas)
             {
                 setData(X);
                 init();
 
-                return tune(lambdas);
+                tune(lambdas);
+                return;
             }
 
             DMatrix<double> tune_and_compute(const DMatrix<double> &X, const DVector<double> &b, std::vector<SVector<1>> &lambdas)
             {
-                double best_lambda = tuning(X, b, lambdas)[0];
+                tuning(X, b, lambdas);
 
                 if (verbose_)
-                    std::cout << "- Best lambda: " << best_lambda << std::endl;
+                    std::cout << "- Best lambda: " << best_lambda_ << std::endl;
 
-                setLambdaS(best_lambda);
+                setLambdaS(best_lambda_[0]);
                 solver_.init_model();
                 solve();
 
@@ -238,12 +241,12 @@ namespace fdaPDE
 
             DMatrix<double> tune_and_compute(const DMatrix<double> &X, std::vector<SVector<1>> &lambdas)
             {
-                double best_lambda = tuning(X, lambdas)[0];
+                tuning(X, lambdas);
 
                 if (verbose_)
-                    std::cout << "- Best lambda: " << best_lambda << std::endl;
+                    std::cout << "- Best lambda: " << best_lambda_ << std::endl;
 
-                setLambdaS(best_lambda);
+                setLambdaS(best_lambda_[0]);
                 solver_.init_model();
                 solve();
 

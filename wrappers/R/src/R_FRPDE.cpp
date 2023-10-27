@@ -97,7 +97,9 @@ public:
       l_.push_back(SVector<1>(v));
 
     model_.init();
-    return model_.tune(l_);
+    model_.tune(l_);
+
+    return model_.get_best_lambda();
   }
 };
 
