@@ -50,6 +50,7 @@ namespace fdaPDE
             bool mass_lumping_ = true;
             bool iterative_ = false;
             unsigned int coefficients_position_ = 1; // 0: both scores and loadings are normalized, 1: coeff in scores, 2: coeff in loadings
+            std::vector<SVector<1>> lambda_s_comp_;
 
             // tag dispatched private methods for computation of PCs, ** to be removed **
             void solve_(fixed_lambda);
@@ -88,6 +89,10 @@ namespace fdaPDE
             void set_mass_lumping(bool mass_lumping) { mass_lumping_ = mass_lumping; }
             void set_iterative(bool iterative) { iterative_ = iterative; }
             void set_coefficients_position(unsigned int coefficients_position) { coefficients_position_ = coefficients_position; }
+            void set_lambda_s_comp(const std::vector<SVector<1>> &lambda_s_comp)
+            {
+                lambda_s_comp_ = lambda_s_comp;
+            }
 
             // methods
             void normalize_results_i(std::size_t i);

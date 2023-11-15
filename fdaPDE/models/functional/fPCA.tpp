@@ -9,7 +9,8 @@ void FPCA<PDE, RegularizationType, SamplingDesign, lambda_selection_strategy>::s
   for (std::size_t i = 0; i < n_pc_; i++)
   {
     // find vectors s,f minimizing \norm_F{Y - s^T*f}^2 + (s^T*s)*P(f) fixed \lambda
-    pe.compute(data_, lambda());
+    lambda_opt_.push_back(lambda_s_comp_[i]);
+    pe.compute(data_, lambda_s_comp_[i]);
     loadings_.col(i) = pe.f_n() / pe.f_n_norm();
     scores_.col(i) = pe.s() * pe.f_n_norm();
     // subtract computed PC from data
@@ -40,7 +41,9 @@ void FPCA<PDE, RegularizationType, SamplingDesign, lambda_selection_strategy>::s
   {
     opt.optimize(f, lambdas()); // select optimal \lambda for i-th PC
     // compute and store results given estimated optimal \lambda
-    pe.compute(data_, opt.optimum());
+    lambda_opt_.push_back(opt.optimum());
+    pe.compute(data_, lambda_opt_.back());
+    W_.col(i) = pe.f() / pe.f_n_norm();
     loadings_.col(i) = pe.f_n() / pe.f_n_norm();
     scores_.col(i) = pe.s() * pe.f_n_norm();
     // subtract computed PC from data
@@ -111,7 +114,9 @@ void FPCA<PDE, RegularizationType, SamplingDesign, lambda_selection_strategy>::s
   {
     cv.compute(lambdas_, data_, cv_score, false); // select optimal smoothing level
     // compute and store results given estimated optimal \lambda
-    pe.compute(data_, cv.optimum());
+    lambda_opt_.push_back(cv.optimum());
+    pe.compute(data_, lambda_opt_.back());
+    W_.col(i) = pe.f() / pe.f_n_norm();
     loadings_.col(i) = pe.f_n() / pe.f_n_norm();
     scores_.col(i) = pe.s() * pe.f_n_norm();
     // subtract computed PC from data
@@ -127,6 +132,7 @@ template <typename PDE, typename RegularizationType,
 void FPCA<PDE, RegularizationType, SamplingDesign, lambda_selection_strategy>::solve()
 {
   // pre-allocate space
+  W_.resize(n_basis(), n_pc_);
   loadings_.resize(X().cols(), n_pc_);
   scores_.resize(X().rows(), n_pc_);
 

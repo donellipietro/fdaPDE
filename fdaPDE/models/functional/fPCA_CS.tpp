@@ -105,10 +105,11 @@ void FPCA_CS<PDE, RegularizationType, SamplingDesign, lambda_selection_strategy>
         // RSVD initialization
         const unsigned int rank = 1;
         RSVD rsvd(X, Psi(not_nan()), P_, verbose_);
-        rsvd.init(lambda()[0]);
 
         for (std::size_t i = 0; i < n_pc_; i++)
         {
+            if (i == 0 || lambda_s_comp_[i][0] != lambda_s_comp_[i - 1][0])
+                rsvd.init(lambda_s_comp_[i][0]);
 
             if (verbose_)
                 std::cout << "  Component " << i + 1 << ":" << std::endl;
@@ -134,7 +135,7 @@ void FPCA_CS<PDE, RegularizationType, SamplingDesign, lambda_selection_strategy>
 
         // RSVD initialization
         RSVD rsvd(data().template get<double>(OBSERVATIONS_BLK), Psi(not_nan()), P_, verbose_);
-        rsvd.init(lambda()[0]);
+        rsvd.init(lambda_s_comp_.front()[0]);
 
         // Scores and loadings computation
         rsvd.solve(n_pc_);

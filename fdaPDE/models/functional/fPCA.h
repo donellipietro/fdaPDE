@@ -33,8 +33,11 @@ namespace fdaPDE
       std::size_t max_iter_ = 20; // maximum number of allowed iterations
 
       // problem solution
+      DMatrix<double> W_;
       DMatrix<double> loadings_;
       DMatrix<double> scores_;
+      std::vector<SVector<1>> lambda_opt_;
+      std::vector<SVector<1>> lambda_s_comp_;
 
       // tag dispatched private methods for computation of PCs, ** to be removed **
       void solve_(fixed_lambda);
@@ -62,13 +65,19 @@ namespace fdaPDE
       virtual void solve(); // compute principal components
 
       // getters
+      const DMatrix<double> &W() const { return W_; }
       const DMatrix<double> &loadings() const { return loadings_; }
       const DMatrix<double> &scores() const { return scores_; }
+      const std::vector<SVector<1>> &lambda_opt() const { return lambda_opt_; }
 
       // setters
       void set_tolerance(double tol) { tol_ = tol; }
       void set_max_iterations(std::size_t max_iter) { max_iter_ = max_iter; }
       void set_npc(std::size_t n_pc) { n_pc_ = n_pc; }
+      void set_lambda_s_comp(const std::vector<SVector<1>> &lambda_s_comp)
+      {
+        lambda_s_comp_ = lambda_s_comp;
+      }
     };
     template <typename PDE_, typename SamplingDesign_, typename lambda_selection_strategy>
     struct model_traits<FPCA<PDE_, fdaPDE::models::SpaceOnly, SamplingDesign_, lambda_selection_strategy>>

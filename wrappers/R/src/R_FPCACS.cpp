@@ -74,13 +74,12 @@ public:
   void set_mass_lumping(bool mass_lumping) { model_.set_mass_lumping(mass_lumping); }
   void set_iterative(bool iterative) { model_.set_iterative(iterative); }
   void set_coefficients_position(unsigned int coefficients_position) { model_.set_coefficients_position(coefficients_position); }
-  void set_lambda_s(double lambdaS) { model_.setLambdaS(lambdaS); }
-  void set_lambdas(std::vector<double> lambdas)
+  void set_lambda_s(std::vector<double> lambdas)
   {
     std::vector<SVector<1>> l_;
     for (auto v : lambdas)
       l_.push_back(SVector<1>(v));
-    model_.setLambda(l_);
+    model_.set_lambda_s_comp(l_);
   }
   void set_observations(const DMatrix<double> &data)
   {
@@ -122,7 +121,6 @@ RCPP_MODULE(FPCA_CS_Laplacian_2D_GeoStatNodes)
       .method("Psi", &FPCA_CS_Laplacian_2D_GeoStatNodes::Psi)
       // Setters
       .method("set_lambda_s", &FPCA_CS_Laplacian_2D_GeoStatNodes::set_lambda_s)
-      .method("set_lambdas", &FPCA_CS_Laplacian_2D_GeoStatNodes::set_lambdas)
       .method("set_npc", &FPCA_CS_Laplacian_2D_GeoStatNodes::set_npc)
       .method("set_observations", &FPCA_CS_Laplacian_2D_GeoStatNodes::set_observations)
       .method("set_verbose", &FPCA_CS_Laplacian_2D_GeoStatNodes::set_verbose)
@@ -152,7 +150,6 @@ RCPP_MODULE(FPCA_CS_Laplacian_2D_GeoStatLocations)
       .method("Psi", &FPCA_CS_Laplacian_2D_GeoStatLocations::Psi)
       // Setters
       .method("set_lambda_s", &FPCA_CS_Laplacian_2D_GeoStatLocations::set_lambda_s)
-      .method("set_lambdas", &FPCA_CS_Laplacian_2D_GeoStatLocations::set_lambdas)
       .method("set_npc", &FPCA_CS_Laplacian_2D_GeoStatLocations::set_npc)
       .method("set_locations", &FPCA_CS_Laplacian_2D_GeoStatLocations::set_locations)
       .method("set_observations", &FPCA_CS_Laplacian_2D_GeoStatLocations::set_observations)
