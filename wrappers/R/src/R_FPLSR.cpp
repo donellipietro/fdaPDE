@@ -254,3 +254,103 @@ RCPP_MODULE(FPLSR_Laplacian_2D_GeoStatLocations)
         // Solve method
         .method("solve", &FPLSR_Laplacian_2D_GeoStatLocations::solve);
 }
+
+// Laplacian_3D_Order1, locations == nodes
+typedef R_FPLSR<Laplacian_3D_Order1, fdaPDE::models::GeoStatMeshNodes> FPLSR_Laplacian_3D_GeoStatNodes;
+RCPP_MODULE(FPLSR_Laplacian_3D_GeoStatNodes)
+{
+    Rcpp::class_<FPLSR_Laplacian_3D_GeoStatNodes>("FPLSR_Laplacian_3D_GeoStatNodes")
+        .constructor<Laplacian_3D_Order1>()
+        // Initializations
+        .method("init_pde", &FPLSR_Laplacian_3D_GeoStatNodes::init_pde)
+        .method("init", &FPLSR_Laplacian_3D_GeoStatNodes::init)
+        .method("init_regularization", &FPLSR_Laplacian_3D_GeoStatNodes::init_regularization)
+        // Getters model base
+        .method("R0", &FPLSR_Laplacian_3D_GeoStatNodes::R0)
+        .method("Psi", &FPLSR_Laplacian_3D_GeoStatNodes::Psi)
+        // Getters functional regression
+        .method("B", &FPLSR_Laplacian_3D_GeoStatNodes::B)
+        .method("Y_mean", &FPLSR_Laplacian_3D_GeoStatNodes::Y_mean)
+        .method("X_mean", &FPLSR_Laplacian_3D_GeoStatNodes::X_mean)
+        .method("reconstructed_field", &FPLSR_Laplacian_3D_GeoStatNodes::reconstructed_field)
+        .method("fitted", &FPLSR_Laplacian_3D_GeoStatNodes::fitted)
+        .method("predict", &FPLSR_Laplacian_3D_GeoStatNodes::predict)
+        .method("get_lambda_initialization", &FPLSR_Laplacian_3D_GeoStatNodes::get_lambda_initialization)
+        .method("get_lambda_directions", &FPLSR_Laplacian_3D_GeoStatNodes::get_lambda_directions)
+        .method("get_lambda_regression", &FPLSR_Laplacian_3D_GeoStatNodes::get_lambda_regression)
+        // Getters fPLSR
+        .method("F", &FPLSR_Laplacian_3D_GeoStatNodes::F)
+        .method("E", &FPLSR_Laplacian_3D_GeoStatNodes::E)
+        .method("W", &FPLSR_Laplacian_3D_GeoStatNodes::W)
+        .method("V", &FPLSR_Laplacian_3D_GeoStatNodes::V)
+        .method("T", &FPLSR_Laplacian_3D_GeoStatNodes::T)
+        .method("C", &FPLSR_Laplacian_3D_GeoStatNodes::C)
+        .method("D", &FPLSR_Laplacian_3D_GeoStatNodes::D)
+        // Setters controls
+        .method("set_tollerance", &FPLSR_Laplacian_3D_GeoStatNodes::set_tolerance)
+        .method("set_max_iterations", &FPLSR_Laplacian_3D_GeoStatNodes::set_max_iterations)
+        .method("set_H", &FPLSR_Laplacian_3D_GeoStatNodes::set_H)
+        // Setters options
+        .method("set_verbose", &FPLSR_Laplacian_3D_GeoStatNodes::set_verbose)
+        .method("set_full_functional", &FPLSR_Laplacian_3D_GeoStatNodes::set_full_functional)
+        .method("set_smoothing_initialization", &FPLSR_Laplacian_3D_GeoStatNodes::set_smoothing_initialization)
+        .method("set_smoothing_initialization_l", &FPLSR_Laplacian_3D_GeoStatNodes::set_smoothing_initialization_l)
+        .method("set_smoothing_regression", &FPLSR_Laplacian_3D_GeoStatNodes::set_smoothing_regression)
+        .method("set_smoothing_regression_l", &FPLSR_Laplacian_3D_GeoStatNodes::set_smoothing_regression_l)
+        // Setters data and parameters
+        .method("set_lambdas", &FPLSR_Laplacian_3D_GeoStatNodes::set_lambdas)
+        .method("set_data", &FPLSR_Laplacian_3D_GeoStatNodes::set_data)
+        .method("set_locations", &FPLSR_Laplacian_3D_GeoStatNodes::set_locations)
+        // Solve method
+        .method("solve", &FPLSR_Laplacian_3D_GeoStatNodes::solve);
+}
+
+// Laplacian_3D_Order1, locations != nodes
+typedef R_FPLSR<Laplacian_3D_Order1, fdaPDE::models::GeoStatLocations> FPLSR_Laplacian_3D_GeoStatLocations;
+RCPP_MODULE(FPLSR_Laplacian_3D_GeoStatLocations)
+{
+    Rcpp::class_<FPLSR_Laplacian_3D_GeoStatLocations>("FPLSR_Laplacian_3D_GeoStatLocations")
+        .constructor<Laplacian_3D_Order1>()
+        // Initializations
+        .method("init_pde", &FPLSR_Laplacian_3D_GeoStatLocations::init_pde)
+        .method("init", &FPLSR_Laplacian_3D_GeoStatLocations::init)
+        .method("init_regularization", &FPLSR_Laplacian_3D_GeoStatLocations::init_regularization)
+        // Getters model base
+        .method("R0", &FPLSR_Laplacian_3D_GeoStatLocations::R0)
+        .method("Psi", &FPLSR_Laplacian_3D_GeoStatLocations::Psi)
+        // Getters functional regression
+        .method("B", &FPLSR_Laplacian_3D_GeoStatLocations::B)
+        .method("Y_mean", &FPLSR_Laplacian_3D_GeoStatLocations::Y_mean)
+        .method("X_mean", &FPLSR_Laplacian_3D_GeoStatLocations::X_mean)
+        .method("reconstructed_field", &FPLSR_Laplacian_3D_GeoStatLocations::reconstructed_field)
+        .method("fitted", &FPLSR_Laplacian_3D_GeoStatLocations::fitted)
+        .method("predict", &FPLSR_Laplacian_3D_GeoStatLocations::predict)
+        .method("get_lambda_initialization", &FPLSR_Laplacian_3D_GeoStatLocations::get_lambda_initialization)
+        .method("get_lambda_directions", &FPLSR_Laplacian_3D_GeoStatLocations::get_lambda_directions)
+        .method("get_lambda_regression", &FPLSR_Laplacian_3D_GeoStatLocations::get_lambda_regression)
+        // Getters fPLSR
+        .method("F", &FPLSR_Laplacian_3D_GeoStatLocations::F)
+        .method("E", &FPLSR_Laplacian_3D_GeoStatLocations::E)
+        .method("W", &FPLSR_Laplacian_3D_GeoStatLocations::W)
+        .method("V", &FPLSR_Laplacian_3D_GeoStatLocations::V)
+        .method("T", &FPLSR_Laplacian_3D_GeoStatLocations::T)
+        .method("C", &FPLSR_Laplacian_3D_GeoStatLocations::C)
+        .method("D", &FPLSR_Laplacian_3D_GeoStatLocations::D)
+        // Setters controls
+        .method("set_tollerance", &FPLSR_Laplacian_3D_GeoStatLocations::set_tolerance)
+        .method("set_max_iterations", &FPLSR_Laplacian_3D_GeoStatLocations::set_max_iterations)
+        .method("set_H", &FPLSR_Laplacian_3D_GeoStatLocations::set_H)
+        // Setters options
+        .method("set_verbose", &FPLSR_Laplacian_3D_GeoStatLocations::set_verbose)
+        .method("set_full_functional", &FPLSR_Laplacian_3D_GeoStatLocations::set_full_functional)
+        .method("set_smoothing_initialization", &FPLSR_Laplacian_3D_GeoStatLocations::set_smoothing_initialization)
+        .method("set_smoothing_initialization_l", &FPLSR_Laplacian_3D_GeoStatLocations::set_smoothing_initialization_l)
+        .method("set_smoothing_regression", &FPLSR_Laplacian_3D_GeoStatLocations::set_smoothing_regression)
+        .method("set_smoothing_regression_l", &FPLSR_Laplacian_3D_GeoStatLocations::set_smoothing_regression_l)
+        // Setters data and parameters
+        .method("set_lambdas", &FPLSR_Laplacian_3D_GeoStatLocations::set_lambdas)
+        .method("set_data", &FPLSR_Laplacian_3D_GeoStatLocations::set_data)
+        .method("set_locations", &FPLSR_Laplacian_3D_GeoStatLocations::set_locations)
+        // Solve method
+        .method("solve", &FPLSR_Laplacian_3D_GeoStatLocations::solve);
+}

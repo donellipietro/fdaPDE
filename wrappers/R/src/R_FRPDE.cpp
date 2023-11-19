@@ -208,3 +208,56 @@ RCPP_MODULE(FRPDE_Laplacian_Surface_GeoStatLocations)
       // Tune method
       .method("tune", &FRPDE_Laplacian_Surface_GeoStatLocations::tune);
 }
+
+// Laplacian_3D_Order1, locations == nodes
+typedef R_FRPDE<Laplacian_3D_Order1, fdaPDE::models::GeoStatMeshNodes> FRPDE_Laplacian_3D_GeoStatNodes;
+RCPP_MODULE(FRPDE_Laplacian_3D_GeoStatNodes)
+{
+  Rcpp::class_<FRPDE_Laplacian_3D_GeoStatNodes>("FRPDE_Laplacian_3D_GeoStatNodes")
+      .constructor<Laplacian_3D_Order1>()
+      // Initializations
+      .method("init", &FRPDE_Laplacian_3D_GeoStatNodes::init)
+      // .method("init_regularization", &FRPDE_Laplacian_3D_GeoStatNodes::init_regularization)
+      //.method("init_pde", &FRPDE_Laplacian_3D_GeoStatNodes::init_pde)
+      // Getters
+      .method("f", &FRPDE_Laplacian_3D_GeoStatNodes::f)
+      .method("fitted", &FRPDE_Laplacian_3D_GeoStatNodes::fitted)
+      // .method("R0", &FRPDE_Laplacian_3D_GeoStatNodes::R0)
+      // .method("Psi", &FRPDE_Laplacian_3D_GeoStatNodes::Psi)
+      // Setters
+      .method("set_lambda_s", &FRPDE_Laplacian_3D_GeoStatNodes::set_lambda_s)
+      // .method("set_lambdas", &FRPDE_Laplacian_3D_GeoStatNodes::set_lambdas)
+      .method("set_observations", &FRPDE_Laplacian_3D_GeoStatNodes::set_observations)
+      .method("set_verbose", &FRPDE_Laplacian_3D_GeoStatNodes::set_verbose)
+      // Solve method
+      .method("solve", &FRPDE_Laplacian_3D_GeoStatNodes::solve)
+      // Tune method
+      .method("tune", &FRPDE_Laplacian_3D_GeoStatNodes::tune);
+}
+
+// Laplacian_3D_Order1, locations != nodes
+typedef R_FRPDE<Laplacian_3D_Order1, fdaPDE::models::GeoStatLocations> FRPDE_Laplacian_3D_GeoStatLocations;
+RCPP_MODULE(FRPDE_Laplacian_3D_GeoStatLocations)
+{
+  Rcpp::class_<FRPDE_Laplacian_3D_GeoStatLocations>("FRPDE_Laplacian_3D_GeoStatLocations")
+      .constructor<Laplacian_3D_Order1>()
+      // Initializations
+      .method("init", &FRPDE_Laplacian_3D_GeoStatLocations::init)
+      // .method("init_regularization", &FRPDE_Laplacian_3D_GeoStatLocations::init_regularization)
+      // .method("init_pde", &FRPDE_Laplacian_3D_GeoStatLocations::init_pde)
+      // Getters
+      .method("f", &FRPDE_Laplacian_3D_GeoStatLocations::f)
+      .method("fitted", &FRPDE_Laplacian_3D_GeoStatLocations::fitted)
+      // .method("R0", &FRPDE_Laplacian_3D_GeoStatLocations::R0)
+      // .method("Psi", &FRPDE_Laplacian_3D_GeoStatLocations::Psi)
+      // Setters
+      .method("set_lambda_s", &FRPDE_Laplacian_3D_GeoStatLocations::set_lambda_s)
+      // .method("set_lambdas", &FRPDE_Laplacian_3D_GeoStatLocations::set_lambdas)
+      .method("set_locations", &FRPDE_Laplacian_3D_GeoStatLocations::set_locations)
+      .method("set_observations", &FRPDE_Laplacian_3D_GeoStatLocations::set_observations)
+      .method("set_verbose", &FRPDE_Laplacian_3D_GeoStatLocations::set_verbose)
+      // Solve method
+      .method("solve", &FRPDE_Laplacian_3D_GeoStatLocations::solve)
+      // Tune method
+      .method("tune", &FRPDE_Laplacian_3D_GeoStatLocations::tune);
+}

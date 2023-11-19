@@ -24,10 +24,14 @@ RcppExport SEXP _rcpp_module_boot_FPCA_Laplacian_2D_GeoStatLocations_fixed();
 RcppExport SEXP _rcpp_module_boot_FPCA_Laplacian_3D_GeoStatNodes_fixed();
 RcppExport SEXP _rcpp_module_boot_FPLSR_Laplacian_2D_GeoStatNodes();
 RcppExport SEXP _rcpp_module_boot_FPLSR_Laplacian_2D_GeoStatLocations();
+RcppExport SEXP _rcpp_module_boot_FPLSR_Laplacian_3D_GeoStatNodes();
+RcppExport SEXP _rcpp_module_boot_FPLSR_Laplacian_3D_GeoStatLocations();
 RcppExport SEXP _rcpp_module_boot_FRPDE_Laplacian_2D_GeoStatNodes();
 RcppExport SEXP _rcpp_module_boot_FRPDE_Laplacian_2D_GeoStatLocations();
 RcppExport SEXP _rcpp_module_boot_FRPDE_Laplacian_Surface_GeoStatNodes();
 RcppExport SEXP _rcpp_module_boot_FRPDE_Laplacian_Surface_GeoStatLocations();
+RcppExport SEXP _rcpp_module_boot_FRPDE_Laplacian_3D_GeoStatNodes();
+RcppExport SEXP _rcpp_module_boot_FRPDE_Laplacian_3D_GeoStatLocations();
 RcppExport SEXP _rcpp_module_boot_Laplacian_2D_Order1();
 RcppExport SEXP _rcpp_module_boot_ConstantCoefficients_2D_Order1();
 RcppExport SEXP _rcpp_module_boot_SpaceVarying_2D_Order1();
@@ -46,10 +50,14 @@ static const R_CallMethodDef CallEntries[] = {
     {"_rcpp_module_boot_FPCA_Laplacian_3D_GeoStatNodes_fixed", (DL_FUNC) &_rcpp_module_boot_FPCA_Laplacian_3D_GeoStatNodes_fixed, 0},
     {"_rcpp_module_boot_FPLSR_Laplacian_2D_GeoStatNodes", (DL_FUNC) &_rcpp_module_boot_FPLSR_Laplacian_2D_GeoStatNodes, 0},
     {"_rcpp_module_boot_FPLSR_Laplacian_2D_GeoStatLocations", (DL_FUNC) &_rcpp_module_boot_FPLSR_Laplacian_2D_GeoStatLocations, 0},
+    {"_rcpp_module_boot_FPLSR_Laplacian_3D_GeoStatNodes", (DL_FUNC) &_rcpp_module_boot_FPLSR_Laplacian_3D_GeoStatNodes, 0},
+    {"_rcpp_module_boot_FPLSR_Laplacian_3D_GeoStatLocations", (DL_FUNC) &_rcpp_module_boot_FPLSR_Laplacian_3D_GeoStatLocations, 0},
     {"_rcpp_module_boot_FRPDE_Laplacian_2D_GeoStatNodes", (DL_FUNC) &_rcpp_module_boot_FRPDE_Laplacian_2D_GeoStatNodes, 0},
     {"_rcpp_module_boot_FRPDE_Laplacian_2D_GeoStatLocations", (DL_FUNC) &_rcpp_module_boot_FRPDE_Laplacian_2D_GeoStatLocations, 0},
     {"_rcpp_module_boot_FRPDE_Laplacian_Surface_GeoStatNodes", (DL_FUNC) &_rcpp_module_boot_FRPDE_Laplacian_Surface_GeoStatNodes, 0},
     {"_rcpp_module_boot_FRPDE_Laplacian_Surface_GeoStatLocations", (DL_FUNC) &_rcpp_module_boot_FRPDE_Laplacian_Surface_GeoStatLocations, 0},
+    {"_rcpp_module_boot_FRPDE_Laplacian_3D_GeoStatNodes", (DL_FUNC) &_rcpp_module_boot_FRPDE_Laplacian_3D_GeoStatNodes, 0},
+    {"_rcpp_module_boot_FRPDE_Laplacian_3D_GeoStatLocations", (DL_FUNC) &_rcpp_module_boot_FRPDE_Laplacian_3D_GeoStatLocations, 0},
     {"_rcpp_module_boot_Laplacian_2D_Order1", (DL_FUNC) &_rcpp_module_boot_Laplacian_2D_Order1, 0},
     {"_rcpp_module_boot_ConstantCoefficients_2D_Order1", (DL_FUNC) &_rcpp_module_boot_ConstantCoefficients_2D_Order1, 0},
     {"_rcpp_module_boot_SpaceVarying_2D_Order1", (DL_FUNC) &_rcpp_module_boot_SpaceVarying_2D_Order1, 0},

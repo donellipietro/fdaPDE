@@ -161,6 +161,7 @@ RCPP_MODULE(FPCA_Laplacian_3D_GeoStatNodes_fixed)
     Rcpp::class_<FPCA_Laplacian_3D_GeoStatNodes_fixed>("FPCA_Laplacian_3D_GeoStatNodes_fixed")
         .constructor<Laplacian_3D_Order1>()
         // Initializations
+        .method("init", &FPCA_Laplacian_3D_GeoStatNodes_fixed::init)
         .method("init_regularization", &FPCA_Laplacian_3D_GeoStatNodes_fixed::init_regularization)
         .method("init_pde", &FPCA_Laplacian_3D_GeoStatNodes_fixed::init_pde)
         // Getters
@@ -168,9 +169,11 @@ RCPP_MODULE(FPCA_Laplacian_3D_GeoStatNodes_fixed)
         .method("loadings", &FPCA_Laplacian_3D_GeoStatNodes_fixed::loadings)
         .method("scores", &FPCA_Laplacian_3D_GeoStatNodes_fixed::scores)
         .method("R0", &FPCA_Laplacian_3D_GeoStatNodes_fixed::R0)
+        .method("Psi", &FPCA_Laplacian_3D_GeoStatNodes_fixed::Psi)
         .method("lambda_opt", &FPCA_Laplacian_3D_GeoStatNodes_fixed::lambda_opt)
         // Setters
         .method("set_lambda_s", &FPCA_Laplacian_3D_GeoStatNodes_fixed::set_lambda_s)
+        .method("set_npc", &FPCA_Laplacian_3D_GeoStatNodes_fixed::set_npc)
         .method("set_observations", &FPCA_Laplacian_3D_GeoStatNodes_fixed::set_observations)
         // Solve method
         .method("solve", &FPCA_Laplacian_3D_GeoStatNodes_fixed::solve);
