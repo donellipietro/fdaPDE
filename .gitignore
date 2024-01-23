@@ -153,11 +153,9 @@
 !test/data/models/FRPDE/2D_test/*
 !test/data/models/FPLSR/
 !test/data/models/FPLSR/*
-!test/data/models/FPLSR/2D_test/
-!test/data/models/FPLSR/2D_test/*
-!test/data/models/FPLSR/2D_test/*/*
-!test/data/models/FPLSR/2D_test/*/*/
-!test/data/models/FPLSR/2D_test/*/*/*
+!test/data/models/FPLSR/2D_test1/
+!test/data/models/FPLSR/2D_test1/*
+!test/data/models/FPLSR/2D_test1/*/*
 *.txt
 *.json
 *.cmake
